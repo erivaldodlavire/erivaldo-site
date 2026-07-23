@@ -9,7 +9,7 @@ window.SUPABASE_CONFIG = {
     cliente: {
         id: 'erivaldo',
         nome: 'Erivaldo Silva',
-        marca: 'Advocacia',
+        marca: 'Engenharia',
         schema: 'erivaldo',
     },
 
