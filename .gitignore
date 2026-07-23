@@ -1,0 +1,81 @@
+# ============================================================================
+# .GITIGNORE — Arquivos que NÃO devem ir pro repositório
+# ============================================================================
+# Propósito: Cada repositório clonado é 100% isolado.
+# Quando você edita js/supabase-config.js (dados de UM cliente),
+# essas mudanças NÃO afetam outros repositórios de outros clientes.
+#
+# Tecnicamente, supabase-config.js PODE fazer commit (não tem segredos reais),
+# mas a ideia é que cada cliente/site tenha sua própria cópia.
+# ============================================================================
+
+# Dependências Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Cache de build
+dist/
+build/
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistemas Operacionais
+Thumbs.db
+.DS_Store
+
+# Arquivos de ambiente (senhas, chaves, etc)
+# ⚠️ NUNCA commitar chaves reais em .env!
+.env
+.env.local
+.env.*.local
+
+# Opcional: se quiser que cada cliente customize seu supabase-config.js
+# sem sincronizar, descomente:
+# js/supabase-config.js
+
+# Logs
+*.log
+logs/
+
+# Arquivos temporários
+temp/
+tmp/
+*.tmp
+
+# Backup de editors
+*.bak
+*.backup
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+
+# ============================================================================
+# IMPORTANTE: O arquivo js/supabase-config.js está INCLUÍDO no Git
+# (não está na lista acima), o que significa:
+#
+# CENÁRIO 1 (Recomendado): Múltiplos repositórios no GitHub
+#   - gleyciane-site/ → seu próprio repo com supabase-config.js de Gleyciane
+#   - erivaldo-site/  → seu próprio repo com supabase-config.js de Erivaldo
+#   - cliente_001-site/ → seu próprio repo com supabase-config.js do Cliente 001
+#   
+#   RESULTADO: Nunca há conflito. Cada repo é totalmente isolado.
+#   SYNC: Quando você faz `git pull origin main` em gleyciane-site/,
+#         ele puxa APENAS as mudanças de gleyciane-site/. Não afeta erivaldo-site/.
+#
+# CENÁRIO 2 (Não recomendado): 1 repositório, múltiplas branches
+#   - branch: main              (template padrão, sem dados reais)
+#   - branch: gleyciane         (supabase-config.js customizado)
+#   - branch: erivaldo          (supabase-config.js customizado)
+#   
+#   PROBLEMA: Fácil se confundir e atualizar a branch errada.
+#   RECOMENDAÇÃO: Use Cenário 1 (múltiplos repos).
+# ============================================================================

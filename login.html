@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito | Painel Administrativo</title>
+    <link rel="icon" href="assets/logo.png">
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ================= PAINEL DA MARCA (esquerda) ================= -->
+    <aside class="painel-marca">
+        <img src="assets/logo.png" alt="Logo" class="marca-logo" id="marca-logo">
+        <div>
+            <h2 class="marca-nome" id="marca-nome">Seu nome aqui</h2>
+            <p class="marca-sub" id="marca-sub">Painel Administrativo</p>
+        </div>
+        <p class="marca-rodape">Plataforma White-Label · Rodape aqui</p>
+    </aside>
+
+    <!-- ================= FORMULÁRIOS (direita) =================
+         Fluxo em "views": só uma etapa visível por vez.
+         O controlador no rodapé (login-controller) faz a navegação
+         e delega TODA a lógica de segurança ao módulo Auth (js/auth.js). -->
+    <main class="painel-form">
+        <div class="cartao">
+
+            <!-- Banner único de feedback (erro/sucesso), reutilizado por todas as views -->
+            <div class="mensagem" id="mensagem" role="alert"></div>
+
+            <!-- ============ VIEW 1: LOGIN ============ -->
+            <section class="view ativa" id="view-login">
+                <h1>Bem-vindo de volta</h1>
+                <p class="descricao">Entre com suas credenciais para gerenciar o site.</p>
+
+                <form id="form-login" novalidate>
+                    <div class="campo">
+                        <label for="login-email">E-mail</label>
+                        <div class="campo-envelope">
+                            <input type="email" id="login-email" autocomplete="username" required>
+                        </div>
+                    </div>
+                    <div class="campo">
+                        <label for="login-senha">Senha</label>
+                        <div class="campo-envelope">
+                            <input type="password" id="login-senha" autocomplete="current-password" required>
+                            <button type="button" class="btn-olho" data-alvo="login-senha" aria-label="Mostrar senha"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primario"><span class="spinner"></span>Entrar no Painel</button>
+                </form>
+
+                <div class="linha-links">
+                    <button type="button" class="link-voltar" id="ir-recuperar">Esqueci minha senha</button>
+                    <a href="index.html"><i class="fas fa-arrow-left"></i> Voltar ao site</a>
+                </div>
+            </section>
+
+            <!-- ============ VIEW 2: PRIMEIRO ACESSO (troca obrigatória) ============ -->
+            <section class="view" id="view-primeiro-acesso">
+                <h1>Defina sua senha</h1>
+                <p class="descricao">Por segurança, a senha padrão de fábrica precisa ser substituída antes do primeiro uso do painel.</p>
+
+                <form id="form-primeiro-acesso" novalidate>
+                    <div class="campo">
+                        <label for="pa-senha">Nova senha</label>
+                        <div class="campo-envelope">
+                            <input type="password" id="pa-senha" autocomplete="new-password" required>
+                            <button type="button" class="btn-olho" data-alvo="pa-senha" aria-label="Mostrar senha"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <div class="forca"><div id="pa-forca-barra"></div></div>
+                        <p class="forca-legenda" id="pa-forca-texto"></p>
+                    </div>
+                    <div class="campo">
+                        <label for="pa-confirma">Confirmar nova senha</label>
+                        <div class="campo-envelope">
+                            <input type="password" id="pa-confirma" autocomplete="new-password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primario"><span class="spinner"></span>Salvar e Acessar</button>
+                </form>
+            </section>
+
+            <!-- ============ VIEW 3: RECUPERAÇÃO — informar destino ============ -->
+            <section class="view" id="view-recuperar">
+                <h1>Recuperar acesso</h1>
+                <p class="descricao">Informe o e-mail cadastrado (ou telefone com DDI, ex.: +55 19 99999-9999) para receber um código de verificação de 6 dígitos.</p>
+
+                <form id="form-recuperar" novalidate>
+                    <div class="campo">
+                        <label for="rec-destino">E-mail ou telefone</label>
+                        <div class="campo-envelope">
+                            <input type="text" id="rec-destino" autocomplete="username" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primario"><span class="spinner"></span>Enviar Código</button>
+                </form>
+
+                <div class="linha-links">
+                    <button type="button" class="link-voltar" data-voltar="view-login"><i class="fas fa-arrow-left"></i> Voltar ao login</button>
+                </div>
+            </section>
+
+            <!-- ============ VIEW 4: VALIDAÇÃO DO CÓDIGO OTP ============ -->
+            <section class="view" id="view-otp">
+                <h1>Digite o código</h1>
+                <p class="descricao">Enviamos um código de 6 dígitos para <strong id="otp-destino-texto"></strong>. Ele expira em alguns minutos.</p>
+
+                <form id="form-otp" novalidate>
+                    <div class="otp-grid" id="otp-grid">
+                        <input type="text" inputmode="numeric" maxlength="1" aria-label="Dígito 1">
+                        <input type="text" inputmode="numeric" maxlength="1" aria-label="Dígito 2">
+                        <input type="text" inputmode="numeric" maxlength="1" aria-label="Dígito 3">
+                        <input type="text" inputmode="numeric" maxlength="1" aria-label="Dígito 4">
+                        <input type="text" inputmode="numeric" maxlength="1" aria-label="Dígito 5">
+                        <input type="text" inputmode="numeric" maxlength="1" aria-label="Dígito 6">
+                    </div>
+                    <button type="submit" class="btn btn-primario"><span class="spinner"></span>Validar Código</button>
+                </form>
+
+                <div class="linha-links">
+                    <button type="button" class="link-voltar" id="reenviar-otp">Reenviar código</button>
+                    <button type="button" class="link-voltar" data-voltar="view-recuperar">Trocar destino</button>
+                </div>
+            </section>
+
+            <!-- ============ VIEW 5: NOVA SENHA (pós-OTP ou link de e-mail) ============ -->
+            <section class="view" id="view-nova-senha">
+                <h1>Nova senha</h1>
+                <p class="descricao">Identidade confirmada. Defina sua nova senha de acesso.</p>
+
+                <form id="form-nova-senha" novalidate>
+                    <div class="campo">
+                        <label for="ns-senha">Nova senha</label>
+                        <div class="campo-envelope">
+                            <input type="password" id="ns-senha" autocomplete="new-password" required>
+                            <button type="button" class="btn-olho" data-alvo="ns-senha" aria-label="Mostrar senha"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <div class="forca"><div id="ns-forca-barra"></div></div>
+                        <p class="forca-legenda" id="ns-forca-texto"></p>
+                    </div>
+                    <div class="campo">
+                        <label for="ns-confirma">Confirmar nova senha</label>
+                        <div class="campo-envelope">
+                            <input type="password" id="ns-confirma" autocomplete="new-password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primario"><span class="spinner"></span>Redefinir e Entrar</button>
+                </form>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Dependências: SDK → config → módulo de segurança -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+
+    <!-- ======================================================================
+         LOGIN-CONTROLLER — Camada de UI desta página.
+         Regra de arquitetura: este script NÃO fala com o Supabase diretamente;
+         toda operação sensível passa pelo módulo Auth. Aqui só existe
+         navegação entre views, feedback visual e coleta de inputs.
+         ====================================================================== -->
+    <script>
+    (() => {
+        'use strict';
+
+        /* ---------- Personalização white-label (vinda do config) ---------- */
+        const cfg = window.SUPABASE_CONFIG;
+        document.getElementById('marca-nome').textContent = cfg.cliente.nome;
+        document.title = `Acesso Restrito | ${cfg.cliente.nome}`;
+
+        /* ---------- Utilitários de UI ---------- */
+        const $ = (sel) => document.querySelector(sel);
+        const msg = $('#mensagem');
+        let destinoOtp = null; // e-mail/telefone usado no fluxo de recuperação
+
+        function mostrarView(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('ativa'));
+            $('#' + id).classList.add('ativa');
+            limparMensagem();
+        }
+        function mostrarMensagem(texto, tipo = 'erro') {
+            msg.textContent = texto;
+            msg.className = `mensagem visivel ${tipo}`;
+        }
+        function limparMensagem() { msg.className = 'mensagem'; }
+
+        // Estado de carregamento nos botões (spinner + disabled)
+        async function comCarregamento(form, acao) {
+            const btn = form.querySelector('button[type=submit]');
+            btn.disabled = true; btn.classList.add('carregando');
+            try { await acao(); }
+            finally { btn.disabled = false; btn.classList.remove('carregando'); }
+        }
+
+        /* ---------- Mostrar/ocultar senha ---------- */
+        document.querySelectorAll('.btn-olho').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.alvo);
+                const oculto = input.type === 'password';
+                input.type = oculto ? 'text' : 'password';
+                btn.innerHTML = `<i class="fas fa-eye${oculto ? '-slash' : ''}"></i>`;
+            });
+        });
+
+        /* ---------- Medidor de força de senha ---------- */
+        function ligarMedidor(inputId, barraId, textoId) {
+            const input = document.getElementById(inputId);
+            input.addEventListener('input', () => {
+                const s = input.value;
+                let pontos = 0;
+                if (s.length >= 8) pontos++;
+                if (/[A-Z]/.test(s) && /[a-z]/.test(s)) pontos++;
+                if (/[0-9]/.test(s)) pontos++;
+                if (/[^A-Za-z0-9]/.test(s)) pontos++;
+                const niveis = [
+                    { w: '10%', cor: '#e05252', txt: 'Muito fraca' },
+                    { w: '35%', cor: '#e08a52', txt: 'Fraca' },
+                    { w: '60%', cor: '#e0c052', txt: 'Razoável' },
+                    { w: '80%', cor: '#8ab54d', txt: 'Boa' },
+                    { w: '100%', cor: '#35b073', txt: 'Excelente' },
+                ];
+                const n = niveis[s ? pontos : 0];
+                const barra = document.getElementById(barraId);
+                barra.style.width = s ? n.w : '0';
+                barra.style.background = n.cor;
+                document.getElementById(textoId).textContent = s ? n.txt : '';
+            });
+        }
+        ligarMedidor('pa-senha', 'pa-forca-barra', 'pa-forca-texto');
+        ligarMedidor('ns-senha', 'ns-forca-barra', 'ns-forca-texto');
+
+        /* ---------- Navegação por links "voltar" ---------- */
+        document.querySelectorAll('[data-voltar]').forEach(b =>
+            b.addEventListener('click', () => mostrarView(b.dataset.voltar)));
+        $('#ir-recuperar').addEventListener('click', () => mostrarView('view-recuperar'));
+
+        /* ================== FLUXO 1: LOGIN ================== */
+        $('#form-login').addEventListener('submit', (e) => {
+            e.preventDefault();
+            comCarregamento(e.target, async () => {
+                const r = await Auth.login($('#login-email').value.trim(), $('#login-senha').value);
+                if (!r.ok) return mostrarMensagem(r.erro);
+
+                if (r.precisaTrocarSenha) {
+                    // Senha padrão de fábrica ainda ativa → troca obrigatória
+                    mostrarView('view-primeiro-acesso');
+                    mostrarMensagem('Primeiro acesso detectado. Crie uma senha pessoal para continuar.', 'sucesso');
+                } else {
+                    entrarNoPainel();
+                }
+            });
+        });
+
+        /* ================== FLUXO 2: PRIMEIRO ACESSO ================== */
+        $('#form-primeiro-acesso').addEventListener('submit', (e) => {
+            e.preventDefault();
+            comCarregamento(e.target, async () => {
+                const senha = $('#pa-senha').value;
+                if (senha !== $('#pa-confirma').value) return mostrarMensagem('As senhas não coincidem.');
+                const r = await Auth.trocarSenhaPrimeiroAcesso(senha);
+                if (!r.ok) return mostrarMensagem(r.erro);
+                mostrarMensagem('Senha definida com sucesso! Entrando...', 'sucesso');
+                setTimeout(entrarNoPainel, 900);
+            });
+        });
+
+        /* ================== FLUXO 3: RECUPERAÇÃO (envio do OTP) ================== */
+        $('#form-recuperar').addEventListener('submit', (e) => {
+            e.preventDefault();
+            comCarregamento(e.target, async () => {
+                destinoOtp = $('#rec-destino').value.trim();
+                const r = await Auth.enviarOtp(destinoOtp);
+                if (!r.ok) return mostrarMensagem(r.erro);
+                $('#otp-destino-texto').textContent = destinoOtp;
+                mostrarView('view-otp');
+                document.querySelector('#otp-grid input').focus();
+            });
+        });
+
+        $('#reenviar-otp').addEventListener('click', async () => {
+            const r = await Auth.enviarOtp(destinoOtp);
+            mostrarMensagem(r.ok ? 'Novo código enviado!' : r.erro, r.ok ? 'sucesso' : 'erro');
+        });
+
+        /* ---------- UX das 6 caixas do OTP (auto-avanço, backspace, colar) ---------- */
+        const caixasOtp = [...document.querySelectorAll('#otp-grid input')];
+        caixasOtp.forEach((caixa, i) => {
+            caixa.addEventListener('input', () => {
+                caixa.value = caixa.value.replace(/\D/g, '');
+                if (caixa.value && i < 5) caixasOtp[i + 1].focus();
+            });
+            caixa.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Backspace' && !caixa.value && i > 0) caixasOtp[i - 1].focus();
+            });
+            caixa.addEventListener('paste', (ev) => {
+                ev.preventDefault();
+                const codigo = (ev.clipboardData.getData('text').match(/\d/g) || []).slice(0, 6);
+                codigo.forEach((d, j) => caixasOtp[j].value = d);
+                caixasOtp[Math.min(codigo.length, 5)].focus();
+            });
+        });
+
+        /* ================== FLUXO 4: VALIDAR OTP ================== */
+        $('#form-otp').addEventListener('submit', (e) => {
+            e.preventDefault();
+            comCarregamento(e.target, async () => {
+                const token = caixasOtp.map(c => c.value).join('');
+                if (token.length !== 6) return mostrarMensagem('Digite os 6 dígitos do código.');
+                const r = await Auth.verificarOtp(destinoOtp, token);
+                if (!r.ok) return mostrarMensagem(r.erro);
+                mostrarView('view-nova-senha');
+                mostrarMensagem('Código validado! Defina sua nova senha.', 'sucesso');
+            });
+        });
+
+        /* ================== FLUXO 5: NOVA SENHA ================== */
+        $('#form-nova-senha').addEventListener('submit', (e) => {
+            e.preventDefault();
+            comCarregamento(e.target, async () => {
+                const senha = $('#ns-senha').value;
+                if (senha !== $('#ns-confirma').value) return mostrarMensagem('As senhas não coincidem.');
+                const r = await Auth.redefinirSenha(senha);
+                if (!r.ok) return mostrarMensagem(r.erro);
+                mostrarMensagem('Senha redefinida! Entrando...', 'sucesso');
+                setTimeout(entrarNoPainel, 900);
+            });
+        });
+
+        /* ---------- Pós-login: respeita ?voltar= (deep-link) ---------- */
+        function entrarNoPainel() {
+            const params = new URLSearchParams(location.search);
+            location.replace(params.get('voltar') || cfg.rotas.admin);
+        }
+
+        /* ---------- Estados especiais na chegada à página ---------- */
+        const modo = new URLSearchParams(location.search).get('modo');
+        if (modo === 'primeiro-acesso') {
+            mostrarView('view-primeiro-acesso');
+        }
+        // Usuário chegou por LINK de recuperação de e-mail: o Supabase dispara
+        // o evento PASSWORD_RECOVERY e já abre sessão temporária.
+        Auth.aoEntrarEmModoRecuperacao(() => mostrarView('view-nova-senha'));
+    })();
+    </script>
+</body>
+</html>

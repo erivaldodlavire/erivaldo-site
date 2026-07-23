@@ -1,0 +1,277 @@
+/* ============================================================================
+ * LOGIN.CSS — Tela de acesso ao painel (White-Label)
+ * ============================================================================
+ * Todas as cores derivam das mesmas CSS variables do site (--primary/--accent),
+ * então quando o theme-engine.js (Fase 2) trocar o tema, o login acompanha
+ * automaticamente — zero retrabalho por cliente.
+ * ========================================================================== */
+
+:root {
+    --primary: #001f3f;
+    --primary-deep: #00142b;
+    --accent: #e5c05b;
+    --gold-gradient: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+    --white: #ffffff;
+    --erro: #e05252;
+    --sucesso: #35b073;
+    --raio: 14px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--primary-deep);
+    color: var(--white);
+}
+
+/* ------------------------------------------------------------------------ */
+/* PAINEL DA MARCA (lado esquerdo)                                          */
+/* ------------------------------------------------------------------------ */
+.painel-marca {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    padding: 48px;
+    background:
+        radial-gradient(120% 90% at 20% 10%, rgba(229, 192, 91, 0.10), transparent 55%),
+        linear-gradient(160deg, var(--primary) 0%, var(--primary-deep) 100%);
+    overflow: hidden;
+}
+
+/* Assinatura visual: linha de "balança" que se equilibra ao carregar */
+.painel-marca::after {
+    content: '';
+    position: absolute;
+    bottom: 18%;
+    left: 50%;
+    width: 46%;
+    height: 2px;
+    background: var(--gold-gradient);
+    transform-origin: center;
+    transform: translateX(-50%) rotate(-6deg);
+    opacity: 0.85;
+    animation: equilibrar 1.6s cubic-bezier(.34, 1.4, .4, 1) 0.3s forwards;
+}
+@keyframes equilibrar { to { transform: translateX(-50%) rotate(0deg); } }
+
+.marca-logo {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+}
+
+.marca-nome {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.marca-sub {
+    font-size: 0.72rem;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: center;
+}
+
+.marca-rodape {
+    position: absolute;
+    bottom: 28px;
+    font-size: 0.68rem;
+    opacity: 0.45;
+    letter-spacing: 0.08em;
+}
+
+/* ------------------------------------------------------------------------ */
+/* ÁREA DO FORMULÁRIO (lado direito)                                        */
+/* ------------------------------------------------------------------------ */
+.painel-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: #f5f6f8;
+    color: var(--primary);
+}
+
+.cartao {
+    width: 100%;
+    max-width: 420px;
+}
+
+/* Cada etapa (login, primeiro acesso, OTP...) é uma "view".
+   Só uma fica visível; a troca tem fade+slide sutil. */
+.view { display: none; animation: entrar 0.35s ease both; }
+.view.ativa { display: block; }
+@keyframes entrar {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.view h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    margin-bottom: 6px;
+}
+.view .descricao {
+    font-size: 0.88rem;
+    color: #5a6472;
+    margin-bottom: 26px;
+    line-height: 1.5;
+}
+
+/* Campos ---------------------------------------------------------------- */
+.campo { margin-bottom: 18px; }
+.campo label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5a6472;
+    margin-bottom: 7px;
+}
+.campo-envelope { position: relative; }
+.campo input {
+    width: 100%;
+    padding: 14px 46px 14px 16px;
+    font: inherit;
+    font-size: 0.95rem;
+    border: 2px solid #dfe3e9;
+    border-radius: 10px;
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.campo input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(229, 192, 91, 0.18);
+}
+.btn-olho {
+    position: absolute;
+    right: 6px; top: 50%;
+    transform: translateY(-50%);
+    border: none; background: none;
+    padding: 10px; cursor: pointer;
+    color: #8a93a1; font-size: 0.95rem;
+}
+.btn-olho:hover { color: var(--primary); }
+
+/* Medidor de força de senha --------------------------------------------- */
+.forca { height: 5px; border-radius: 3px; background: #e4e7ec; overflow: hidden; margin-top: 8px; }
+.forca > div { height: 100%; width: 0; border-radius: 3px; transition: width 0.3s, background 0.3s; }
+.forca-legenda { font-size: 0.72rem; color: #8a93a1; margin-top: 5px; min-height: 1em; }
+
+/* OTP: 6 caixas ---------------------------------------------------------- */
+.otp-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin: 6px 0 4px;
+}
+.otp-grid input {
+    padding: 0;
+    height: 56px;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 700;
+    border: 2px solid #dfe3e9;
+    border-radius: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.otp-grid input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(229, 192, 91, 0.18);
+}
+
+/* Botões ------------------------------------------------------------------ */
+.btn {
+    width: 100%;
+    padding: 15px;
+    margin-top: 6px;
+    border: none;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.86rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+}
+.btn-primario {
+    background: var(--primary);
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    box-shadow: 0 8px 22px rgba(0, 31, 63, 0.28);
+}
+.btn-primario:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:disabled { opacity: 0.65; cursor: wait; }
+
+/* Spinner embutido no botão durante requisições */
+.btn .spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: -3px;
+    animation: girar 0.7s linear infinite;
+}
+.btn.carregando .spinner { display: inline-block; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Links auxiliares -------------------------------------------------------- */
+.linha-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    font-size: 0.82rem;
+}
+.linha-links a, .link-voltar {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: none;
+    border: none; background: none;
+    font: inherit; font-weight: 700; font-size: 0.82rem;
+    cursor: pointer;
+}
+.linha-links a:hover, .link-voltar:hover { text-decoration: underline; }
+
+/* Mensagens de erro/sucesso ----------------------------------------------- */
+.mensagem {
+    display: none;
+    margin-bottom: 18px;
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+.mensagem.visivel { display: block; animation: entrar 0.25s ease both; }
+.mensagem.erro    { background: #fdecec; color: #a33030; border: 1px solid #f3c8c8; }
+.mensagem.sucesso { background: #e8f7ef; color: #1d7a4c; border: 1px solid #bfe6d1; }
+
+/* Responsivo + acessibilidade --------------------------------------------- */
+@media (max-width: 860px) {
+    body { grid-template-columns: 1fr; }
+    .painel-marca { min-height: 220px; padding: 32px 24px; }
+    .marca-logo { width: 84px; height: 84px; }
+    .marca-nome { font-size: 1.4rem; }
+    .marca-rodape { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
