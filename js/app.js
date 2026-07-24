@@ -16,34 +16,15 @@
 (() => {
     'use strict';
 
-    /* ========================================================================
-     * 🆕 GUARDA: Modo Demo (Site-modelo com TEMPLATE_XXX)
-     * ========================================================================
-     * Se supabaseClient é null (modo TEMPLATE), não tenta carregar dados.
-     * Isto evita que Site-modelo veja mudanças de Gleyciane.
-     * ======================================================================== */
-    if (window.SUPABASE_MODO_DEMO || !window.supabaseClient) {
-        console.log('📋 Modo TEMPLATE/DEMO ativo — Site não carrega dados reais.');
-        console.log('   Para ativar com dados reais: ./setup-client.sh <slug> "<nome>" "<marca>"');
-        
-        // Mostra mensagem visual no site
-        document.body.innerHTML = `
-            <div style="padding:40px; text-align:center; font-family:Arial; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <h1 style="color:#fff; font-size:3rem; margin-bottom:20px;">🎨 Site Modelo</h1>
-                <p style="color:#fff; font-size:1.2rem; margin-bottom:30px;">Este é o template padrão em modo DEMO (sem dados reais)</p>
-                <p style="color:#fff; font-size:1rem; margin-bottom:30px;">Para criar seu próprio site, execute:</p>
-                <pre style="background:rgba(0,0,0,0.3); padding:20px; border-radius:8px; color:#fff; border:2px solid #fff; font-size:1rem;">./setup-client.sh SEU_SLUG "Seu Nome Completo" "Sua Profissão"</pre>
-                <p style="color:#fff; font-size:0.9rem; margin-top:30px; margin-bottom:15px;">Exemplos:</p>
-                <pre style="background:rgba(0,0,0,0.3); padding:20px; border-radius:8px; color:#fff; border:2px solid #fff; font-size:0.9rem;">./setup-client.sh gleyciane "Gleyciane Araújo" "Advocacia"
-./setup-client.sh erivaldo "Erivaldo Silva" "Advocacia"
-./setup-client.sh cliente_abc "ABC Consultoria" "Consultoria"</pre>
-            </div>
-        `;
-        return; // Não executa o resto do código
-    }
-
     const cfgApp = window.SUPABASE_CONFIG;
-    const db = supabase.createClient(cfgApp.url, cfgApp.anonKey);
+    // 🔒 CRÍTICO: sem "db: { schema }" o client cai no padrão "public" —
+    // mesmo bug que existia no auth.js. O site público precisa ler do
+    // MESMO schema onde o admin salva, senão "salva mas não aparece".
+    const schemaCliente = cfgApp.cliente.schema;
+    const db = supabase.createClient(cfgApp.url, cfgApp.anonKey, {
+        db: { schema: schemaCliente },
+    });
+    console.log(`🔒 [App] Site público lendo do schema: "${schemaCliente}"`);
     const $ = (sel) => document.querySelector(sel);
 
     let config = null; // espelho do site_config
@@ -190,49 +171,55 @@
                         thumb = `<img src="https://img.youtube.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy">
                                  <div class="play-overlay"><i class="fab fa-youtube"></i></div>`;
                     }
-                    return `<div class="pub-item reveal" data-evento="pub_${d.nome}"><a href="${esc(p.l)}" target="_blank">${thumb}</a></div>`;
+                    return `<div class="pub-container">
+                                <p class="pub-desc">${esc(p.d)}</p>
+                                <div class="pub-item"><a href="${esc(p.l)}" target="_blank" rel="noopener" data-evento="pub_click">${thumb}</a></div>
+                            </div>`;
                 }).join('');
+            } else {
+                $('#publicacoes').style.display = 'none';
             }
         });
 
         /* --- Redes sociais (ícone detectado pela URL) --- */
         blindado('redes sociais', () => {
-            const contRedes = $('#container-redes');
+            const icone = (u) => u.includes('instagram') ? 'fab fa-instagram'
+                : (u.includes('youtube') || u.includes('youtu.be')) ? 'fab fa-youtube'
+                : (u.includes('whatsapp') || u.includes('wa.me')) ? 'fab fa-whatsapp'
+                : u.includes('linkedin') ? 'fab fa-linkedin'
+                : u.includes('facebook') ? 'fab fa-facebook'
+                : u.includes('tiktok') ? 'fab fa-tiktok'
+                : (u.includes('t.me') || u.includes('telegram')) ? 'fab fa-telegram'
+                : u.includes('threads') ? 'fab fa-threads'
+                : u.includes('kwai') ? 'fas fa-video'
+                : (u.includes('x.com') || u.includes('twitter')) ? 'fab fa-x-twitter'
+                : 'fas fa-link';
+
             const redes = (d.redes || []).filter(u => u?.trim());
             if (redes.length) {
-                const icone = (u) => u.includes('instagram') ? 'fab fa-instagram'
-                    : (u.includes('youtube') || u.includes('youtu.be')) ? 'fab fa-youtube'
-                    : (u.includes('whatsapp') || u.includes('wa.me')) ? 'fab fa-whatsapp'
-                    : u.includes('linkedin') ? 'fab fa-linkedin'
-                    : u.includes('facebook') ? 'fab fa-facebook'
-                    : u.includes('tiktok') ? 'fab fa-tiktok'
-                    : (u.includes('t.me') || u.includes('telegram')) ? 'fab fa-telegram'
-                    : u.includes('threads') ? 'fab fa-threads'
-                    : u.includes('kwai') ? 'fas fa-video'
-                    : (u.includes('x.com') || u.includes('twitter')) ? 'fab fa-x-twitter'
-                    : 'fas fa-link';
-                contRedes.innerHTML = redes.map(url => `<a href="${esc(url)}" target="_blank" title="Redes"><i class="${icone(url)}"></i></a>`).join('');
+                const html = redes.map(u =>
+                    `<a href="${esc(u)}" target="_blank" rel="noopener" data-evento="rede_social"><i class="${icone(u)}"></i></a>`).join('');
+                $('#edit-redes-sociais-icones').innerHTML = html;
+                $('#edit-social-links-footer').innerHTML = html;
             }
         });
 
         /* --- WhatsApp: todos os elementos [data-whats] apontam pro número --- */
-        blindado('whatsapp', () => {
-            if (d.whats) {
-                document.querySelectorAll('[data-whats]').forEach(el => {
-                    el.href = `https://wa.me/${d.whats.replace(/\D/g, '')}`;
-                });
-            }
-        });
+        if (d.whats) {
+            const num = d.whats.replace(/\D/g, '');
+            document.querySelectorAll('[data-whats]').forEach(a => { a.href = `https://wa.me/${num}`; a.target = '_blank'; });
+        }
     }
 
     /* ==================================================================== */
-    /* 4) n8n WEBHOOKS — automação invisível (formulário + cliques)         */
+    /* 4) INTEGRAÇÃO n8n — disparos invisíveis com payload rico             */
     /* ==================================================================== */
+    // Monta o "envelope" comum a todos os eventos: quem, onde e quando.
     function payloadBase(evento) {
         return {
             evento,
-            cliente: cfgApp.cliente.id,
-            pagina: { url: location.href, titulo: document.title, referrer: document.referrer },
+            cliente: cfgApp.cliente,                        // { id, nome, marca }
+            pagina: { url: location.href, titulo: document.title, referrer: document.referrer || null },
             dispositivo: { userAgent: navigator.userAgent, idioma: navigator.language, largura: innerWidth },
             timestamp: new Date().toISOString(),
         };
