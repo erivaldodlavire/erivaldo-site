@@ -5,6 +5,20 @@
  * tema na aba Aparência, o próprio painel se repinta — preview vivo.
  * ========================================================================== */
 
+/* ---- Fontes personalizadas licenciadas (opcional, via Admin) --------
+ * Arquivos ficam em assets/fonts/ na raiz do projeto. Arial não entra
+ * aqui de propósito: é referenciada pelo nome (fonte de sistema). */
+@font-face {
+    font-family: 'Swiss721Custom';
+    src: url('../assets/fonts/Swis721_BT_Roman.ttf') format('truetype');
+    font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+    font-family: 'BonVoyageCustom';
+    src: url('../assets/fonts/MADE_Bon_Voyage_Regular_PERSONAL_USE.otf') format('opentype');
+    font-weight: 400; font-style: normal; font-display: swap;
+}
+
 :root {
     --primary: #001f3f;
     --accent: #e5c05b;
@@ -141,6 +155,20 @@ textarea { resize: vertical; min-height: 90px; }
     padding: 11px 22px; border-radius: 9px; font: inherit;
     font-weight: 800; font-size: 0.8rem; cursor: pointer;
 }
+.badge-notif {
+    display: inline-block; background: var(--erro); color: #fff;
+    font-size: 0.68rem; font-weight: 800; min-width: 18px; height: 18px;
+    line-height: 18px; text-align: center; border-radius: 999px;
+    padding: 0 5px; margin-left: 6px; vertical-align: middle;
+}
+.btn-aprovar-avaliacao, .btn-rejeitar-avaliacao {
+    flex: 0 0 auto; border: none; border-radius: 8px; padding: 10px 16px;
+    font: inherit; font-weight: 800; font-size: 0.78rem; cursor: pointer; transition: 0.2s;
+}
+.btn-aprovar-avaliacao { background: var(--sucesso); color: #fff; }
+.btn-aprovar-avaliacao:hover { opacity: 0.85; }
+.btn-rejeitar-avaliacao { background: #fdecec; color: var(--erro); border: 1px solid #f3c8c8; }
+.btn-rejeitar-avaliacao:hover { background: var(--erro); color: #fff; }
 
 /* ------------------------- LAYOUT BUILDER (DnD) -------------------------- */
 .lista-layout { list-style: none; }
@@ -204,7 +232,29 @@ textarea { resize: vertical; min-height: 90px; }
     padding: 11px 18px; font: inherit; font-weight: 800; font-size: 0.78rem; cursor: pointer;
 }
 
+/* --------------------------- ESTATÍSTICAS -------------------------------- */
+#select-periodo-stats { max-width: 220px; }
+.stats-resumo { display: flex; gap: 14px; flex-wrap: wrap; margin: 18px 0; }
+.stats-card {
+    flex: 1; min-width: 140px; background: #fff; border: 1px solid var(--borda);
+    border-radius: 10px; padding: 16px; text-align: center;
+}
+.stats-card strong { display: block; font-size: 1.8rem; color: var(--primary); }
+.stats-card span { font-size: 0.72rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; }
+.stats-linha { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.stats-nome { flex: 0 0 170px; font-size: 0.8rem; font-weight: 700; color: #5a6472; }
+.stats-barra-fundo { flex: 1; height: 20px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+.stats-barra { height: 100%; background: var(--accent-grad, var(--accent)); border-radius: 999px; transition: width 0.4s ease; }
+.stats-qtd { flex: 0 0 34px; text-align: right; font-weight: 800; font-size: 0.85rem; }
+
 /* ------------------------------- LEADS ----------------------------------- */
+.select-status-lead {
+    padding: 6px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800;
+    border: 2px solid; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.select-status-lead.novo { background: #fdecec; color: var(--erro); border-color: #f3c8c8; }
+.select-status-lead.andamento { background: #fff8e1; color: #b8860b; border-color: #f0dca0; }
+.select-status-lead.concluido { background: #eafaf0; color: var(--sucesso); border-color: #b9e8c9; }
 .tabela-leads { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
 .tabela-leads th {
     text-align: left; padding: 10px 12px; font-size: 0.68rem;
@@ -246,6 +296,76 @@ textarea { resize: vertical; min-height: 90px; }
     animation: brilhar 1.3s infinite;
 }
 @keyframes brilhar { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* ------------------------- EDITOR VISUAL DO HERO ------------------------- */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.aberto { display: flex; }
+.modal-caixa {
+    background: var(--surface); border-radius: var(--raio); max-width: 720px; width: 100%;
+    max-height: 90vh; overflow-y: auto; padding: 24px;
+}
+/* Cabeçalho + prévia ficam "grudados" no topo ao rolar os controles —
+   assim dá pra ver o resultado mudando sem perder a foto de vista. */
+.modal-fixo {
+    position: sticky; top: -24px; z-index: 10; background: var(--surface);
+    margin: -24px -24px 16px; padding: 24px 24px 12px;
+    border-bottom: 1px solid var(--borda);
+}
+.modal-cabecalho { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-cabecalho h3 { border: none; padding: 0; margin: 0; font-size: 0.95rem; }
+.modal-fechar { background: none; border: none; font-size: 1.7rem; line-height: 1; cursor: pointer; color: #8a93a1; }
+
+.hero-preview-wrapper { margin-bottom: 20px; }
+.hero-preview {
+    position: relative; width: 100%; aspect-ratio: 16/8; border-radius: 10px; overflow: hidden;
+    background: var(--primary) no-repeat center center/cover; border: 1px solid var(--borda);
+}
+.preview-foto-pessoa {
+    position: absolute; right: 0; bottom: 0; height: 100%; width: auto;
+    object-fit: contain; z-index: 1;
+}
+.preview-overlay {
+    position: absolute; inset: 0; z-index: 2; display: flex; align-items: center;
+}
+.preview-content { position: relative; color: #fff; padding: 16px; max-width: 55%; }
+.preview-content h4 { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent); margin-bottom: 4px; }
+.preview-content p { font-size: 0.72rem; opacity: 0.9; margin-bottom: 2px; }
+.editor-controles .grade-2 { margin-bottom: 6px; }
+.editor-controles input[type=range] { padding: 0; margin-top: 8px; }
+.editor-nota {
+    font-size: 0.76rem; color: #5a6472; background: #eef2f7; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 16px; line-height: 1.4;
+}
+.editor-nota i { color: var(--accent); margin-right: 4px; }
+.preview-btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.preview-btn-primary, .preview-btn-whats {
+    font-size: 0.62rem; font-weight: 800; padding: 5px 9px; border-radius: 5px;
+}
+.preview-btn-primary { background: var(--accent); color: var(--primary); }
+.preview-btn-whats { background: #25d366; color: #fff; }
+#btn-resetar-hero:disabled, #btn-ultimo-preset:disabled { opacity: 0.4; cursor: not-allowed; }
+#btn-resetar-hero:not(:disabled) { background: var(--erro) !important; }
+#btn-ultimo-preset:not(:disabled) { opacity: 1; }
+.editor-secao {
+    border: 1px solid var(--borda); border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 16px; background: #fafbfc;
+}
+.editor-secao h4 {
+    font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #5a6472; margin-bottom: 8px;
+}
+.editor-secao textarea {
+    min-height: 52px; resize: vertical; font-size: 0.85rem;
+}
+.controle-slider { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.controle-slider input[type=range] { flex: 1; margin-top: 0; }
+.controle-slider input[type=number] {
+    width: 62px; flex: 0 0 auto; padding: 6px 8px; margin-top: 0;
+    text-align: center; font-size: 0.8rem;
+}
 
 /* ---------------------------- RESPONSIVO --------------------------------- */
 @media (max-width: 900px) {

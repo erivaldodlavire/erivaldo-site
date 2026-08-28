@@ -43,11 +43,67 @@ body {
 }
 img { max-width: 100%; }
 
-/* ==================== SKELETON DE CARREGAMENTO ==========================
- * Enquanto o app.js busca a config, o conteúdo estático (fallback) fica
- * levemente esmaecido; quando os dados chegam, tudo "acende" suave.       */
-body.carregando #hero .hero-content { opacity: 0.35; filter: blur(1px); }
-#hero .hero-content { transition: opacity 0.5s, filter 0.5s; }
+/* ==================== TELA DE CARREGAMENTO ===============================
+ * Enquanto o app.js busca a config no Supabase, o site inteiro (incluindo
+ * o fallback estático genérico) fica ESCONDIDO atrás de uma capa sólida
+ * com o logo do próprio cliente pulsando no centro. Assim que os dados
+ * reais chegam e a classe "carregando" é removida do <body>, a capa
+ * desaparece com um fade suave e o conteúdo CERTO já aparece direto —
+ * sem "flash" de texto genérico ("Seu nome", "Digite Crea OAB aqui" etc).
+ * ========================================================================== */
+body.carregando {
+    overflow: hidden;
+    height: 100vh;
+}
+
+body.carregando::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: var(--primary);
+    z-index: 9999;
+    animation: fade-in-capa 0.15s ease both;
+}
+
+body.carregando::after {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 72px;
+    height: 72px;
+    margin: -36px 0 0 -36px;
+    background: url('assets/logo.png') center/contain no-repeat;
+    z-index: 10000;
+    animation: pulsar-logo 1.4s ease-in-out infinite;
+}
+
+@keyframes fade-in-capa {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes pulsar-logo {
+    0%, 100% { opacity: 0.45; transform: scale(0.92); }
+    50%      { opacity: 1;    transform: scale(1); }
+}
+
+/* Transição suave: quando "carregando" some, o site "acende" com fade
+ * em vez de aparecer de corte seco — sensação mais premium/polida. */
+#mapa-secoes, .main-header, footer, .whats-flutuante {
+    opacity: 1;
+    transition: opacity 0.35s ease;
+}
+body.carregando #mapa-secoes,
+body.carregando .main-header,
+body.carregando footer,
+body.carregando .whats-flutuante {
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.carregando::after { animation: none; opacity: 1; transform: none; }
+}
 
 /* ==================== ANIMAÇÕES DE ENTRADA (scroll reveal) ==============
  * O app.js observa .reveal com IntersectionObserver e adiciona .visivel.  */
@@ -82,13 +138,33 @@ body.carregando #hero .hero-content { opacity: 0.35; filter: blur(1px); }
 .btn-contato-nav { background: var(--accent); color: var(--primary) !important; padding: 9px 16px; border-radius: 5px; font-weight: 800; }
 
 /* =============================== HERO =================================== */
-#hero { width: 100%; min-height: 92vh; background: var(--primary) no-repeat center center/cover; margin-top: 70px; }
+#hero { width: 100%; min-height: 92vh; background: var(--primary) no-repeat center center/cover; margin-top: 70px; position: relative; overflow: hidden; }
 .hero-overlay {
-    width: 100%; min-height: 92vh;
+    width: 100%; min-height: 92vh; position: relative; z-index: 2;
     display: flex; align-items: center; justify-content: center;
     background: color-mix(in srgb, var(--primary) 78%, transparent);
 }
 .hero-content { text-align: center; color: #fff; padding: 24px; animation: heroEntrada 0.9s ease both; }
+
+/* ---- Modelo Alternativo do Hero (opcional, ligado no Admin) ------------
+ * Foto da pessoa recortada à direita + texto à esquerda, com gradiente
+ * automático (escuro → claro) para qualquer foto de fundo enviada. */
+.hero-pessoa-alt {
+    display: none; position: absolute; z-index: 1; right: 0; bottom: 0;
+    height: 100%; width: auto; object-fit: contain; object-position: bottom; pointer-events: none;
+}
+#hero.hero-alt .hero-pessoa-alt { display: block; }
+#hero.hero-alt .hero-overlay {
+    justify-content: flex-start;
+    background: linear-gradient(to right,
+        color-mix(in srgb, var(--primary) 92%, transparent) 0%,
+        color-mix(in srgb, var(--primary) 92%, transparent) 42%,
+        color-mix(in srgb, var(--primary) 20%, transparent) 88%,
+        color-mix(in srgb, var(--primary) 20%, transparent) 100%);
+}
+#hero.hero-alt .hero-content { text-align: left; max-width: 540px; margin-left: 7%; }
+#hero.hero-alt .hero-btns { justify-content: flex-start; }
+#hero.hero-alt .perfil-foto { display: none; }
 @keyframes heroEntrada { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 .perfil-foto {
     width: 180px; height: 180px; border-radius: 50%;
@@ -108,9 +184,22 @@ body.carregando #hero .hero-content { opacity: 0.35; filter: blur(1px); }
 .btn-primary:hover, .btn-whatsapp:hover { transform: translateY(-3px) scale(1.03); }
 
 /* ============================== SEÇÕES ================================== */
-.full-section { width: 100%; padding: 88px 5%; text-align: center; }
+.full-section { width: 100%; padding: 88px 5%; text-align: center; position: relative; }
 .container { max-width: 1200px; margin: 0 auto; }
 .gray-bg { background: var(--surface); }
+
+/* ---- Fundo do Corpo (opcional, definido no Admin) ----------------------
+ * Imagem fixa atrás de TODAS as .full-section (Sobre → Fale Conosco),
+ * com opacidade ajustável. Header (fixo, com blur próprio) e rodapé
+ * (cor sólida) ficam por cima naturalmente, sem precisar de exceção.
+ * Sem imagem configurada no Admin, nada muda no site (classe ausente). */
+body.tem-fundo-corpo::before {
+    content: ''; position: fixed; inset: 0; z-index: -2;
+    background-image: var(--fundo-corpo-img); background-size: cover;
+    background-position: center; background-attachment: fixed;
+    opacity: var(--fundo-corpo-opacidade, 0.4);
+}
+body.tem-fundo-corpo .full-section { background: transparent; }
 h2 {
     font-family: var(--font-display); font-size: clamp(1.7rem, 3.4vw, 2.3rem);
     margin-bottom: 44px; position: relative; padding-bottom: 16px; color: var(--texto);
@@ -127,8 +216,16 @@ h2::after {
     background: var(--card); padding: 40px 22px; border-radius: 12px;
     box-shadow: var(--sombra-card); border-top: 4px solid var(--accent);
     transition: transform 0.3s, box-shadow 0.3s;
+    display: flex; flex-direction: column; align-items: center;
 }
 .card:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12); }
+.card-whats-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: auto; /* empurra sempre pro rodapé do card, alinhando entre todos */
+    padding: 8px 14px; border-radius: 8px; background: #25d366; color: #fff !important;
+    font-size: 0.74rem; font-weight: 800; text-decoration: none; transition: 0.2s;
+}
+.card-whats-btn:hover { opacity: 0.85; }
 .card h3 { margin-bottom: 8px; }
 .gold-3d {
     font-size: 44px; color: var(--accent); margin-bottom: 18px; display: inline-block;
@@ -143,17 +240,54 @@ h2::after {
     background: var(--card); padding: 30px; border-radius: 12px;
     box-shadow: var(--sombra-card); width: 350px; max-width: 82vw;
     text-align: left; border-left: 5px solid var(--accent);
+    transition: transform 0.3s, box-shadow 0.3s;
 }
+.review-card:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12); }
+.client-name { display: block; font-weight: 800; font-size: 1.05rem; color: var(--primary); margin-bottom: 6px; }
 .stars { color: #f1c40f; margin-bottom: 10px; letter-spacing: 2px; }
-.client-name { display: block; margin-top: 15px; font-weight: 800; color: var(--accent); }
+
+/* --- Formulário público de avaliação --- */
+.avaliacao-form-wrapper { max-width: 480px; margin: 40px auto 0; text-align: left; }
+.avaliacao-form-wrapper h3 { margin-bottom: 14px; }
+#form-avaliacao input, #form-avaliacao textarea {
+    width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px;
+    border: 1px solid var(--accent); background: var(--card); color: inherit; font: inherit;
+    box-sizing: border-box;
+}
+.star-input { font-size: 1.6rem; color: #ccc; margin-bottom: 14px; cursor: pointer; }
+.star-input i { margin-right: 4px; transition: color 0.15s; }
+.star-input i.ativa { color: #f1c40f; }
+.btn-enviar-avaliacao {
+    background: var(--accent); color: #fff; border: none; padding: 12px 24px;
+    border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+    letter-spacing: 0.04em; transition: 0.3s;
+}
+.btn-enviar-avaliacao:hover:not(:disabled) { opacity: 0.88; }
+.btn-enviar-avaliacao:disabled { opacity: 0.7; cursor: wait; }
+.av-feedback {
+    display: none; margin-top: 14px; padding: 12px 15px;
+    border-radius: 9px; font-size: 0.88rem; font-weight: 600;
+}
+.av-feedback.visivel { display: block; animation: heroEntrada 0.3s ease both; }
+.av-feedback.sucesso { background: #e8f7ef; color: #1d7a4c; }
+.av-feedback.erro { background: #fdecec; color: #a33030; }
 
 /* ============================ NOSSO ESPAÇO ============================== */
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
-.office-photo img {
-    width: 100%; height: 260px; object-fit: cover; object-position: top;
-    border-radius: 12px; border: 2px solid var(--accent); transition: transform 0.35s;
+.office-photo {
+    position: relative; height: 260px; border-radius: 12px; overflow: hidden;
+    border: 2px solid var(--accent); cursor: zoom-in; background: #000;
 }
-.office-photo img:hover { transform: scale(1.025); }
+.office-photo-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    filter: blur(18px) brightness(0.55); transform: scale(1.15);
+}
+.office-photo img {
+    position: relative; z-index: 1; display: block;
+    width: 100%; height: 100%; object-fit: contain; transition: transform 0.35s;
+}
+.office-photo:hover img { transform: scale(1.03); }
 
 /* ============================ PUBLICAÇÕES =============================== */
 .pub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
@@ -190,7 +324,7 @@ h2::after {
 }
 .carrossel-trilha::-webkit-scrollbar { display: none; }
 .carrossel-trilha > * { flex: 0 0 clamp(240px, calc(25% - 15px), 420px); scroll-snap-align: start; }
-.carrossel-trilha .office-photo img { height: 240px; }
+.carrossel-trilha .office-photo { height: 240px; }
 
 .seta-carrossel {
     position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
@@ -209,7 +343,33 @@ h2::after {
 
 /* ========================= INFO DE CONTATO ============================== */
 .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 26px; margin-bottom: 40px; }
-.info-item { background: var(--card); padding: 30px 18px; border-radius: 12px; box-shadow: var(--sombra-card); }
+.info-item {
+    background: var(--card); padding: 30px 18px; border-radius: 12px; box-shadow: var(--sombra-card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+/* --- Google Meu Negócio: mapa, rotas e selo (dentro do card Endereço) --- */
+.mapa-embed-wrapper { margin-top: 16px; border-radius: 10px; overflow: hidden; }
+.mapa-embed-wrapper iframe { width: 100%; height: 170px; border: 0; display: block; }
+.btn-rotas {
+    display: inline-block; margin-top: 12px; padding: 8px 16px; border-radius: 8px;
+    background: var(--accent); color: var(--primary) !important; font-weight: 800;
+    font-size: 0.72rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.google-badge {
+    margin-top: 14px; display: flex; flex-direction: column; align-items: center;
+    gap: 8px; font-size: 0.82rem;
+}
+.google-badge-estrelas {
+    font-weight: 800; font-size: 0.92rem; color: #1a1a1a;
+}
+.google-badge-estrelas i { margin-right: 4px; color: #e5c05b; }
+.google-badge-btn {
+    padding: 7px 15px; border-radius: 7px; border: none;
+    background: var(--accent); color: var(--primary) !important; font-weight: 800; font-size: 0.7rem;
+    text-decoration: none; text-transform: uppercase; letter-spacing: 0.04em; transition: 0.2s;
+}
+.google-badge-btn:hover { opacity: 0.85; }
 .info-item h3 { margin-bottom: 6px; font-size: 1rem; }
 .info-item p { font-size: 0.9rem; }
 .social-links-contato a, .social-links a {
@@ -282,6 +442,13 @@ footer {
 /* ============================= RESPONSIVO =============================== */
 @media (max-width: 768px) {
     .nav-menu { display: none; }
+    /* Modelo Alternativo do Hero: uma foto lateral grande não cabe bem
+       em telas estreitas — volta automaticamente ao modelo padrão. */
+    #hero.hero-alt .hero-pessoa-alt { display: none; }
+    #hero.hero-alt .hero-overlay { justify-content: center; background: color-mix(in srgb, var(--primary) 78%, transparent); }
+    #hero.hero-alt .hero-content { text-align: center; max-width: 100%; margin-left: 0; }
+    #hero.hero-alt .hero-btns { justify-content: center; }
+    #hero.hero-alt .perfil-foto { display: block; }
     .form-row { flex-direction: column; gap: 15px; }
     .hero-btns { flex-direction: column; align-items: center; }
     .full-section { padding: 64px 6%; }
@@ -298,3 +465,22 @@ footer {
     }
     .reveal { opacity: 1; transform: none; }
 }
+
+/* ============================ LIGHTBOX =================================== */
+.lightbox-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    z-index: 3000; padding: 30px;
+}
+.lightbox-overlay.ativo { opacity: 1; pointer-events: auto; }
+.lightbox-img {
+    max-width: 92vw; max-height: 90vh; object-fit: contain;
+    border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+.lightbox-fechar {
+    position: absolute; top: 20px; right: 26px; background: none; border: none;
+    color: #fff; font-size: 2.4rem; line-height: 1; cursor: pointer;
+    opacity: 0.85; transition: opacity 0.2s, transform 0.2s;
+}
+.lightbox-fechar:hover { opacity: 1; transform: scale(1.1); }
