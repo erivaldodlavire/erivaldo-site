@@ -140,6 +140,42 @@ window.ThemeEngine = (() => {
         },
     };
 
+    // ------------------------------------------------------------------ //
+    // FONTES PERSONALIZADAS (opcional, sobrepõe as fontes do tema)
+    // ------------------------------------------------------------------ //
+    // Arial é referenciada pelo nome (fonte segura de sistema, sem embutir
+    // arquivo — mais leve e sem questão de licença). As outras duas usam
+    // @font-face (arquivos em assets/fonts/), com licença comercial paga
+    // pelo cliente. Bon Voyage é decorativa: usada só nos títulos, o corpo
+    // de texto continua numa fonte legível.
+    const FONTES = {
+        arial: {
+            nome: 'Arial (Clássica)',
+            fontDisplay: 'Arial, Helvetica, sans-serif', fontBody: 'Arial, Helvetica, sans-serif',
+        },
+        swiss721: {
+            nome: 'Swiss 721 (Corporativa)',
+            fontDisplay: "'Swiss721Custom', Arial, sans-serif", fontBody: "'Swiss721Custom', Arial, sans-serif",
+        },
+        bonvoyage: {
+            nome: 'Bon Voyage (Assinatura, só títulos)',
+            fontDisplay: "'BonVoyageCustom', cursive", fontBody: "'Montserrat', sans-serif",
+        },
+        // ---- Fontes de sistema (seguras, sem @font-face, sem licença) ----
+        helvetica: { nome: 'Helvetica', fontDisplay: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontBody: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
+        georgia: { nome: 'Georgia (Clássica)', fontDisplay: 'Georgia, serif', fontBody: 'Georgia, serif' },
+        timesnewroman: { nome: 'Times New Roman', fontDisplay: "'Times New Roman', Times, serif", fontBody: "'Times New Roman', Times, serif" },
+        verdana: { nome: 'Verdana', fontDisplay: 'Verdana, Geneva, sans-serif', fontBody: 'Verdana, Geneva, sans-serif' },
+        tahoma: { nome: 'Tahoma', fontDisplay: 'Tahoma, Geneva, sans-serif', fontBody: 'Tahoma, Geneva, sans-serif' },
+        trebuchet: { nome: 'Trebuchet MS', fontDisplay: "'Trebuchet MS', sans-serif", fontBody: "'Trebuchet MS', sans-serif" },
+        // ---- Google Fonts (licença livre, já carregadas no <head>) ----
+        lato: { nome: 'Lato', fontDisplay: "'Lato', sans-serif", fontBody: "'Lato', sans-serif" },
+        opensans: { nome: 'Open Sans', fontDisplay: "'Open Sans', sans-serif", fontBody: "'Open Sans', sans-serif" },
+        raleway: { nome: 'Raleway', fontDisplay: "'Raleway', sans-serif", fontBody: "'Raleway', sans-serif" },
+        nunito: { nome: 'Nunito', fontDisplay: "'Nunito', sans-serif", fontBody: "'Nunito', sans-serif" },
+        merriweather: { nome: 'Merriweather (Serifada)', fontDisplay: "'Merriweather', serif", fontBody: "'Merriweather', serif" },
+    };
+
     const TEMA_PADRAO = 'advogado';
 
     // ------------------------------------------------------------------ //
@@ -165,8 +201,12 @@ window.ThemeEngine = (() => {
         raiz.setProperty('--bg', custom.bg || tema.bg);
         raiz.setProperty('--surface', tema.surface);
         raiz.setProperty('--texto', tema.texto);
-        raiz.setProperty('--font-display', tema.fontDisplay);
-        raiz.setProperty('--font-body', tema.fontBody);
+        // Fonte personalizada (opcional): sobrescreve a do tema, sem alterar
+        // cores nem áudio. Sem seleção, comportamento 100% igual a antes.
+        const fonteId = aparencia?.fontePersonalizada;
+        const fonte = fonteId && FONTES[fonteId];
+        raiz.setProperty('--font-display', fonte ? fonte.fontDisplay : tema.fontDisplay);
+        raiz.setProperty('--font-body', fonte ? fonte.fontBody : tema.fontBody);
 
         // Marcações no <body> para o CSS reagir (ex.: sombras em tema escuro)
         document.body.dataset.tema = id;
@@ -185,5 +225,7 @@ window.ThemeEngine = (() => {
     const categorias = () => [...new Set(Object.values(TEMAS).map(t => t.cat))];
     const get = (id) => TEMAS[id] || TEMAS[TEMA_PADRAO];
 
-    return { aplicar, listar, categorias, get, TEMA_PADRAO };
+    const listarFontes = () => Object.entries(FONTES).map(([id, f]) => ({ id, ...f }));
+
+    return { aplicar, listar, categorias, get, listarFontes, TEMA_PADRAO };
 })();

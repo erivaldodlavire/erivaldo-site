@@ -85,6 +85,10 @@
         Object.entries(CAMPOS).forEach(([id, chave]) => { $('#' + id).value = estado[chave] || ''; });
         $('#cfg-webhook-leads').value = estado.integracao?.webhookLeads || '';
         $('#cfg-webhook-eventos').value = estado.integracao?.webhookEventos || '';
+        $('#cfg-google-nota').value = estado.integracao?.googleNota || '';
+        $('#cfg-google-qtd').value = estado.integracao?.googleQtd || '';
+        $('#cfg-google-link-avaliacoes').value = estado.integracao?.googleLinkAvaliacoes || '';
+        $('#cfg-google-link-mapa').value = estado.integracao?.googleLinkMapa || '';
         $('#topo-nome').textContent = estado.nome || SUPABASE_CONFIG.cliente.nome;
         if (estado.identidade?.favicon) {
             $('#topo-logo').src = estado.identidade.favicon;
@@ -97,6 +101,10 @@
         estado.integracao = {
             webhookLeads: $('#cfg-webhook-leads').value.trim(),
             webhookEventos: $('#cfg-webhook-eventos').value.trim(),
+            googleNota: $('#cfg-google-nota').value.trim(),
+            googleQtd: $('#cfg-google-qtd').value.trim(),
+            googleLinkAvaliacoes: $('#cfg-google-link-avaliacoes').value.trim(),
+            googleLinkMapa: $('#cfg-google-link-mapa').value.trim(),
         };
     }
 
@@ -145,6 +153,47 @@
         $('#input-upload').click();
     }
 
+    // Liga cada slider à sua caixinha numérica vizinha (id "rng-x" <-> "num-x").
+    // Funciona nos dois sentidos: mexeu na barra, o número acompanha; digitou
+    // o número, a barra pula pra lá e dispara o mesmo evento de sempre —
+    // então nenhuma lógica de slider precisou ser duplicada ou alterada.
+    function ligarParesSliderNumero() {
+        document.querySelectorAll('.controle-slider input[type=range]').forEach(range => {
+            const numId = 'num-' + range.id.replace(/^(rng-|slider-)/, '');
+            const numero = document.getElementById(numId);
+            if (!numero) return;
+
+            // Só reescreve a caixinha quando a mudança veio da BARRINHA — se o
+            // foco está na própria caixinha (usuário digitando), não mexe nela,
+            // senão cada tecla digitada "briga" com o cursor e trava a digitação.
+            range.addEventListener('input', () => {
+                if (document.activeElement !== numero) numero.value = range.value;
+            });
+
+            numero.addEventListener('input', () => {
+                if (numero.value === '' || numero.value === '-') return; // digitando ainda
+                const v = Math.min(Number(range.max), Math.max(Number(range.min), Number(numero.value)));
+                if (Number.isNaN(v)) return;
+                range.value = v;
+                range.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+
+            // Ao sair do campo (Tab/clique fora/Enter), corrige o número exibido
+            // para o valor final e válido — sem interferir enquanto digita.
+            numero.addEventListener('change', () => { numero.value = range.value; });
+        });
+    }
+
+    // Chamada sempre que um slider tem seu valor definido PELO CÓDIGO (não
+    // pelo usuário) — abrir a popup, resetar, aplicar preset — para a
+    // caixinha numérica nunca ficar dessincronizada da barrinha.
+    function sincronizarTodosNumeros() {
+        document.querySelectorAll('.controle-slider input[type=range]').forEach(range => {
+            const numero = document.getElementById('num-' + range.id.replace(/^(rng-|slider-)/, ''));
+            if (numero) numero.value = range.value;
+        });
+    }
+
     function ligarUploads() {
         const inputArquivo = $('#input-upload');
 
@@ -153,8 +202,9 @@
             item.querySelector('.moldura').addEventListener('click', () => {
                 const chave = item.dataset.chave;
                 // Fundo do hero merece mais resolução; logos podem ser menores
-                const largura = chave === 'identidade.fundo' ? 1600
-                              : chave === 'identidade.favicon' ? 400 : 1280;
+                const largura = chave === 'identidade.fundo' || chave === 'identidade.fundoCorpo' || chave === 'identidade.heroFundoAlt' ? 1600
+                              : chave === 'identidade.favicon' ? 400
+                              : chave === 'identidade.heroPessoaAlt' ? 1000 : 1280;
                 pedirImagem(largura, (b64) => { setCaminho(chave, b64); preencherUploads(); });
             });
         });
@@ -170,6 +220,30 @@
             inputArquivo.value = ''; // permite reenviar o mesmo arquivo
             acaoUpload = null;
         });
+
+        // Fundo do Corpo: opacidade ajustável por slider (0-100%) + interruptor liga/desliga
+        const sliderOpacidade = $('#slider-fundo-corpo-opacidade');
+        if (sliderOpacidade) {
+            sliderOpacidade.addEventListener('input', () => {
+                estado.identidade = estado.identidade || {};
+                estado.identidade.fundoCorpoOpacidade = Number(sliderOpacidade.value);
+                $('#label-fundo-corpo-opacidade').textContent = sliderOpacidade.value + '%';
+            });
+        }
+        const chkFundoCorpo = $('#chk-fundo-corpo');
+        if (chkFundoCorpo) {
+            chkFundoCorpo.addEventListener('change', () => {
+                estado.identidade = estado.identidade || {};
+                estado.identidade.fundoCorpoAtivo = chkFundoCorpo.checked;
+            });
+        }
+        const chkHeroAlt = $('#chk-hero-alt');
+        if (chkHeroAlt) {
+            chkHeroAlt.addEventListener('change', () => {
+                estado.identidade = estado.identidade || {};
+                estado.identidade.heroModeloAlt = chkHeroAlt.checked;
+            });
+        }
     }
 
     function preencherUploads() {
@@ -179,6 +253,23 @@
             img.src = src;
             item.querySelector('.vazio').style.display = src ? 'none' : '';
         });
+
+        const sliderOpacidade = $('#slider-fundo-corpo-opacidade');
+        if (sliderOpacidade) {
+            const valor = estado.identidade?.fundoCorpoOpacidade ?? 40;
+            sliderOpacidade.value = valor;
+            sincronizarTodosNumeros();
+            $('#label-fundo-corpo-opacidade').textContent = valor + '%';
+        }
+        const chkFundoCorpo = $('#chk-fundo-corpo');
+        if (chkFundoCorpo) {
+            // Padrão: se já existe imagem salva e a flag nunca foi definida, considera ativo
+            chkFundoCorpo.checked = estado.identidade?.fundoCorpoAtivo ?? !!estado.identidade?.fundoCorpo;
+        }
+        const chkHeroAlt = $('#chk-hero-alt');
+        if (chkHeroAlt) {
+            chkHeroAlt.checked = estado.identidade?.heroModeloAlt ?? false;
+        }
     }
 
     /* --- Galeria "Nosso Espaço": fotos ILIMITADAS --- */
@@ -380,10 +471,226 @@
                     : null;
                 aplicarPreview();
             }));
+
+        // Fonte personalizada (opcional, independente do tema)
+        const selectFonte = $('#select-fonte');
+        if (selectFonte) {
+            selectFonte.innerHTML = '<option value="">Padrão do tema</option>' +
+                ThemeEngine.listarFontes().map(f => `<option value="${f.id}" style="font-family:${f.fontDisplay}">${f.nome}</option>`).join('');
+            selectFonte.value = estado.aparencia.fontePersonalizada || '';
+            selectFonte.addEventListener('change', () => {
+                estado.aparencia.fontePersonalizada = selectFonte.value || null;
+                aplicarPreview();
+            });
+        }
     }
 
     // O painel É a pré-visualização: aplicar aqui mostra na hora como fica
     const aplicarPreview = () => ThemeEngine.aplicar(estado.aparencia);
+
+    /* ==================================================================== */
+    /* 7b) EDITOR VISUAL DO HERO — posição do texto/foto + degradê          */
+    /* ==================================================================== */
+    // Valores padrão idênticos aos já fixados no CSS público (style.css), para
+    // que "nunca ter aberto o editor" continue produzindo o visual de sempre.
+    const HERO_AJUSTES_PADRAO = {
+        textoX: 0, textoY: 0, fotoX: 0, fotoEscala: 100,
+        gradInicio: 92, gradFim: 20, gradPontoA: 42, gradPontoB: 88,
+        elementos: {
+            titulo: { rotacao: 0, tamanho: 34, fonte: '' },
+            oab: { rotacao: 0, tamanho: 17, fonte: '' },
+            slogan: { rotacao: 0, tamanho: 20, fonte: '' },
+        },
+    };
+
+    // Mapa único: cada elemento de texto do Hero, seu campo em `estado`, e os
+    // ids dos controles na popup. Evita repetir a mesma lógica 3 vezes.
+    const ELEMENTOS_HERO = [
+        { id: 'titulo', chaveEstado: 'nome', seletorPreview: '#preview-nome', prefixo: 'titulo' },
+        { id: 'oab', chaveEstado: 'oab', seletorPreview: '#preview-oab', prefixo: 'oab' },
+        { id: 'slogan', chaveEstado: 'slogan', seletorPreview: '#preview-slogan', prefixo: 'slogan' },
+    ];
+
+    function ligarEditorHero() {
+        const btnAbrir = $('#btn-abrir-editor-hero');
+        const modal = $('#modal-hero-editor');
+        if (!btnAbrir || !modal) return;
+
+        const camposNumericos = {
+            textoX: $('#rng-texto-x'), textoY: $('#rng-texto-y'),
+            fotoX: $('#rng-foto-x'), fotoEscala: $('#rng-foto-escala'),
+            gradInicio: $('#rng-grad-inicio'), gradFim: $('#rng-grad-fim'),
+            gradPontoA: $('#rng-grad-pa'), gradPontoB: $('#rng-grad-pb'),
+        };
+        const chkPopup = $('#chk-hero-alt-popup');
+        const chkExterno = $('#chk-hero-alt');
+        const btnResetar = $('#btn-resetar-hero');
+        const btnUltimoPreset = $('#btn-ultimo-preset');
+
+        // Controles de cada elemento de texto (título, oab, slogan) — montados
+        // uma vez, reaproveitando o catálogo ELEMENTOS_HERO.
+        const opcoesFontes = ThemeEngine.listarFontes()
+            .map(f => `<option value="${f.id}" style="font-family:${f.fontDisplay}">${f.nome}</option>`).join('');
+        ELEMENTOS_HERO.forEach(el => {
+            el.$texto = $(`#pop-${el.prefixo === 'titulo' ? 'nome' : el.prefixo}`);
+            el.$tamanho = $(`#rng-${el.prefixo}-tamanho`);
+            el.$rotacao = $(`#rng-${el.prefixo}-rotacao`);
+            el.$fonte = $(`#select-${el.prefixo}-fonte`);
+            el.$lblTamanho = $(`#lbl-${el.prefixo}-tamanho`);
+            el.$lblRotacao = $(`#lbl-${el.prefixo}-rotacao`);
+            el.$preview = $(el.seletorPreview);
+            el.$fonte.innerHTML = '<option value="">Padrão do tema</option>' + opcoesFontes;
+        });
+
+        function marcarComoAlterado() { btnResetar.disabled = false; }
+
+        function calcularEscalaPreview() {
+            const largura = $('#hero-preview').offsetWidth || 700;
+            return largura / (window.innerWidth || 1400);
+        }
+
+        function atualizarPreview() {
+            const aj = estado.identidade.heroAltAjustes;
+            const escala = calcularEscalaPreview();
+
+            const conteudo = $('#preview-content');
+            conteudo.style.marginLeft = aj.textoX + '%';
+            conteudo.style.marginTop = aj.textoY + '%';
+
+            ELEMENTOS_HERO.forEach(el => {
+                const cfg = aj.elementos[el.id];
+                // innerText (não textContent!) interpreta \n como quebra de linha real
+                el.$preview.innerText = estado[el.chaveEstado] || '';
+                el.$preview.style.transform = `rotate(${cfg.rotacao}deg)`;
+                el.$preview.style.fontSize = Math.max(8, cfg.tamanho * escala) + 'px';
+                const fonteEscolhida = cfg.fonte && ThemeEngine.listarFontes().find(f => f.id === cfg.fonte);
+                el.$preview.style.fontFamily = fonteEscolhida ? fonteEscolhida.fontDisplay : '';
+                el.$lblTamanho.textContent = cfg.tamanho + 'px';
+                el.$lblRotacao.textContent = cfg.rotacao + '°';
+            });
+
+            const foto = $('#preview-foto-pessoa');
+            foto.style.transform = `translateX(${aj.fotoX}%) scale(${aj.fotoEscala / 100})`;
+
+            $('#preview-overlay').style.background = `linear-gradient(to right,
+                color-mix(in srgb, var(--primary) ${aj.gradInicio}%, transparent) 0%,
+                color-mix(in srgb, var(--primary) ${aj.gradInicio}%, transparent) ${aj.gradPontoA}%,
+                color-mix(in srgb, var(--primary) ${aj.gradFim}%, transparent) ${aj.gradPontoB}%,
+                color-mix(in srgb, var(--primary) ${aj.gradFim}%, transparent) 100%)`;
+
+            $('#lbl-grad-inicio').textContent = aj.gradInicio + '%';
+            $('#lbl-grad-fim').textContent = aj.gradFim + '%';
+            $('#lbl-grad-pa').textContent = aj.gradPontoA + '%';
+            $('#lbl-grad-pb').textContent = aj.gradPontoB + '%';
+        }
+
+        btnAbrir.addEventListener('click', () => {
+            estado.identidade = estado.identidade || {};
+            const base = JSON.parse(JSON.stringify(HERO_AJUSTES_PADRAO));
+            estado.identidade.heroAltAjustes = { ...base, ...(estado.identidade.heroAltAjustes || {}) };
+            estado.identidade.heroAltAjustes.elementos = {
+                ...base.elementos, ...(estado.identidade.heroAltAjustes.elementos || {}),
+            };
+            Object.entries(camposNumericos).forEach(([chave, el]) => { el.value = estado.identidade.heroAltAjustes[chave]; });
+
+            ELEMENTOS_HERO.forEach(el => {
+                const cfg = estado.identidade.heroAltAjustes.elementos[el.id];
+                el.$texto.value = estado[el.chaveEstado] || '';
+                el.$tamanho.value = cfg.tamanho;
+                el.$rotacao.value = cfg.rotacao;
+                el.$fonte.value = cfg.fonte || '';
+            });
+
+            chkPopup.checked = !!estado.identidade.heroModeloAlt;
+            btnResetar.disabled = true; // só reativa quando o usuário mexer em algo NESTA sessão
+            btnUltimoPreset.disabled = !estado.identidade.heroAltUltimoPreset;
+
+            const foto = $('#preview-foto-pessoa');
+            foto.src = estado.identidade.heroPessoaAlt || '';
+            const fundo = estado.identidade.heroFundoAlt || estado.identidade.fundo || '';
+            $('#hero-preview').style.backgroundImage = fundo ? `url('${fundo}')` : 'none';
+
+            sincronizarTodosNumeros();
+            atualizarPreview();
+            modal.classList.add('aberto');
+        });
+
+        $('#fechar-editor-hero').addEventListener('click', () => modal.classList.remove('aberto'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('aberto'); });
+
+        Object.entries(camposNumericos).forEach(([chave, el]) => {
+            el.addEventListener('input', () => {
+                estado.identidade.heroAltAjustes[chave] = Number(el.value);
+                marcarComoAlterado();
+                atualizarPreview();
+            });
+        });
+
+        ELEMENTOS_HERO.forEach(el => {
+            el.$texto.addEventListener('input', () => {
+                estado[el.chaveEstado] = el.$texto.value;
+                // mantém a aba Conteúdo sincronizada (input de linha única lá,
+                // então quebras de linha só aparecem visualmente aqui na popup)
+                const campoConteudo = { titulo: '#cfg-nome', oab: '#cfg-oab', slogan: '#cfg-slogan' }[el.id];
+                if ($(campoConteudo)) $(campoConteudo).value = el.$texto.value;
+                marcarComoAlterado();
+                atualizarPreview();
+            });
+            el.$tamanho.addEventListener('input', () => {
+                estado.identidade.heroAltAjustes.elementos[el.id].tamanho = Number(el.$tamanho.value);
+                marcarComoAlterado();
+                atualizarPreview();
+            });
+            el.$rotacao.addEventListener('input', () => {
+                estado.identidade.heroAltAjustes.elementos[el.id].rotacao = Number(el.$rotacao.value);
+                marcarComoAlterado();
+                atualizarPreview();
+            });
+            el.$fonte.addEventListener('change', () => {
+                estado.identidade.heroAltAjustes.elementos[el.id].fonte = el.$fonte.value;
+                marcarComoAlterado();
+                atualizarPreview();
+            });
+        });
+
+        // Interruptor duplicado (dentro e fora da popup) — mantém os dois em sincronia
+        function alternarHeroAlt(ativo) {
+            estado.identidade.heroModeloAlt = ativo;
+            chkPopup.checked = ativo;
+            if (chkExterno) chkExterno.checked = ativo;
+            marcarComoAlterado();
+        }
+        chkPopup.addEventListener('change', () => alternarHeroAlt(chkPopup.checked));
+        if (chkExterno) chkExterno.addEventListener('change', () => alternarHeroAlt(chkExterno.checked));
+
+        function aplicarConjunto(conjunto) {
+            estado.identidade.heroAltAjustes = JSON.parse(JSON.stringify(conjunto));
+            Object.entries(camposNumericos).forEach(([chave, el]) => { el.value = estado.identidade.heroAltAjustes[chave]; });
+            ELEMENTOS_HERO.forEach(el => {
+                const cfg = estado.identidade.heroAltAjustes.elementos[el.id];
+                el.$tamanho.value = cfg.tamanho;
+                el.$rotacao.value = cfg.rotacao;
+                el.$fonte.value = cfg.fonte || '';
+            });
+            sincronizarTodosNumeros();
+            atualizarPreview();
+        }
+
+        btnResetar.addEventListener('click', () => {
+            if (btnResetar.disabled) return;
+            aplicarConjunto(HERO_AJUSTES_PADRAO);
+        });
+
+        btnUltimoPreset.addEventListener('click', () => {
+            if (btnUltimoPreset.disabled) return;
+            const preset = estado.identidade.heroAltUltimoPreset;
+            aplicarConjunto({
+                ...HERO_AJUSTES_PADRAO, ...preset,
+                elementos: { ...HERO_AJUSTES_PADRAO.elementos, ...(preset.elementos || {}) },
+            });
+            marcarComoAlterado();
+        });
+    }
 
     /* ==================================================================== */
     /* 8) MOTOR DE ÁUDIO — controles do Admin                               */
@@ -419,24 +726,47 @@
     /* ==================================================================== */
     /* 9) LEADS — leitura protegida por RLS (só logado enxerga)             */
     /* ==================================================================== */
+    const NOMES_STATUS_LEAD = { novo: 'Novo', andamento: 'Em andamento', concluido: 'Concluído' };
+
     async function carregarLeads() {
         const corpo = $('#corpo-leads');
-        corpo.innerHTML = `<tr><td colspan="6" class="vazio-leads"><span class="skeleton" style="display:inline-block;width:200px">&nbsp;</span></td></tr>`;
+        corpo.innerHTML = `<tr><td colspan="7" class="vazio-leads"><span class="skeleton" style="display:inline-block;width:200px">&nbsp;</span></td></tr>`;
         const { data, error } = await db.from('site_leads')
             .select('*').order('created_at', { ascending: false }).limit(200);
 
-        if (error) { corpo.innerHTML = `<tr><td colspan="6" class="vazio-leads">Erro ao carregar: ${esc(error.message)}</td></tr>`; return; }
-        if (!data.length) { corpo.innerHTML = `<tr><td colspan="6" class="vazio-leads">Nenhuma mensagem ainda. Quando o formulário do site for enviado, aparece aqui.</td></tr>`; return; }
+        if (error) { corpo.innerHTML = `<tr><td colspan="7" class="vazio-leads">Erro ao carregar: ${esc(error.message)}</td></tr>`; return; }
+        if (!data.length) {
+            corpo.innerHTML = `<tr><td colspan="7" class="vazio-leads">Nenhuma mensagem ainda. Quando o formulário do site for enviado, aparece aqui.</td></tr>`;
+            atualizarBadgeLeads(0);
+            return;
+        }
 
-        corpo.innerHTML = data.map(l => `
+        corpo.innerHTML = data.map(l => {
+            const status = l.status || 'novo';
+            return `
             <tr>
+                <td>
+                    <select class="select-status-lead ${status}" data-lead-status="${l.id}">
+                        ${Object.entries(NOMES_STATUS_LEAD).map(([v, n]) => `<option value="${v}" ${v === status ? 'selected' : ''}>${n}</option>`).join('')}
+                    </select>
+                </td>
                 <td>${new Date(l.created_at).toLocaleDateString('pt-BR')}<br><small>${new Date(l.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small></td>
                 <td><strong>${esc(l.nome)}</strong></td>
                 <td>${esc(l.email || '')}<br><small>${esc(l.whatsapp || '')}</small></td>
                 <td>${esc(l.assunto || '')}</td>
                 <td class="msg">${esc(l.mensagem || '')}</td>
                 <td><button type="button" class="btn-remover" data-lead="${l.id}" title="Apagar"><i class="fas fa-trash"></i></button></td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
+
+        atualizarBadgeLeads(data.filter(l => (l.status || 'novo') === 'novo').length);
+
+        corpo.querySelectorAll('[data-lead-status]').forEach(select => select.addEventListener('change', async () => {
+            select.className = `select-status-lead ${select.value}`;
+            await db.from('site_leads').update({ status: select.value }).eq('id', select.dataset.leadStatus);
+            const novos = corpo.querySelectorAll('.select-status-lead.novo').length;
+            atualizarBadgeLeads(novos);
+        }));
 
         corpo.querySelectorAll('[data-lead]').forEach(btn => btn.addEventListener('click', async () => {
             if (!confirm('Apagar este lead definitivamente?')) return;
@@ -444,7 +774,130 @@
             carregarLeads();
         }));
     }
+
+    function atualizarBadgeLeads(qtd) {
+        const badge = $('#badge-leads');
+        if (!badge) return;
+        badge.textContent = qtd;
+        badge.style.display = qtd > 0 ? 'inline-block' : 'none';
+    }
     $('#btn-recarregar-leads').addEventListener('click', carregarLeads);
+
+    /* ==================================================================== */
+    /* 9b) ESTATÍSTICAS — cliques rastreados + leads, por período           */
+    /* ==================================================================== */
+    const NOMES_EVENTOS = {
+        cta_consultoria: 'Botão "Solicitar Consultoria"',
+        cta_whatsapp_hero: 'WhatsApp (topo do site)',
+        cta_whatsapp_flutuante: 'WhatsApp (botão flutuante)',
+        cta_whatsapp_area: 'WhatsApp (dentro de uma Área de Atuação)',
+        cta_whatsapp_pos_lead: 'WhatsApp (após enviar o formulário)',
+        pub_click: 'Cliques em publicações/vídeos',
+        rede_social: 'Cliques em redes sociais',
+    };
+
+    async function carregarEstatisticas() {
+        const select = $('#select-periodo-stats');
+        const resumo = $('#stats-resumo');
+        const barras = $('#stats-barras');
+        if (!select || !resumo || !barras) return;
+
+        resumo.innerHTML = '<div class="stats-card"><span class="skeleton" style="display:inline-block;width:80px">&nbsp;</span></div>';
+        barras.innerHTML = '';
+
+        const dias = Number(select.value);
+        const desde = dias > 0 ? new Date(Date.now() - dias * 86400000).toISOString() : '1970-01-01T00:00:00Z';
+
+        const [leadsResp, eventosResp, visitasResp] = await Promise.all([
+            db.from('site_leads').select('id', { count: 'exact', head: true }).gte('created_at', desde),
+            db.from('site_eventos').select('evento').neq('evento', 'visita_site').gte('created_at', desde),
+            db.from('site_eventos').select('id', { count: 'exact', head: true }).eq('evento', 'visita_site').gte('created_at', desde),
+        ]);
+
+        const totalLeads = leadsResp.count ?? 0;
+        const eventos = eventosResp.data || [];
+        const totalVisitas = visitasResp.count ?? 0;
+
+        resumo.innerHTML = `
+            <div class="stats-card"><strong>${totalVisitas}</strong><span>Visitas ao site</span></div>
+            <div class="stats-card"><strong>${totalLeads}</strong><span>Leads recebidos</span></div>
+            <div class="stats-card"><strong>${eventos.length}</strong><span>Cliques rastreados</span></div>
+        `;
+
+        const contagem = {};
+        eventos.forEach(e => { contagem[e.evento] = (contagem[e.evento] || 0) + 1; });
+        const linhas = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+
+        if (!linhas.length) {
+            barras.innerHTML = '<p class="dica">Nenhum clique registrado nesse período ainda.</p>';
+            return;
+        }
+
+        const max = linhas[0][1];
+        barras.innerHTML = linhas.map(([evento, qtd]) => `
+            <div class="stats-linha">
+                <span class="stats-nome">${esc(NOMES_EVENTOS[evento] || evento)}</span>
+                <div class="stats-barra-fundo"><div class="stats-barra" style="width:${(qtd / max) * 100}%"></div></div>
+                <span class="stats-qtd">${qtd}</span>
+            </div>`).join('');
+
+        // Detalhamento: quais publicações (por tema) e quais redes sociais
+        // específicas mais recebem cliques — não só o total por tipo.
+        const [{ data: pubEventos }, { data: redeEventos }] = await Promise.all([
+            db.from('site_eventos').select('texto_botao').eq('evento', 'pub_click').gte('created_at', desde),
+            db.from('site_eventos').select('destino').eq('evento', 'rede_social').gte('created_at', desde),
+        ]);
+        renderizarBarrasDetalhe('#stats-publicacoes', pubEventos, 'texto_botao', t => t || '(sem tema cadastrado)');
+        renderizarBarrasDetalhe('#stats-redes', redeEventos, 'destino', nomeRedeSocial);
+
+        const { data: areaEventos } = await db.from('site_eventos')
+            .select('texto_botao').eq('evento', 'cta_whatsapp_area').gte('created_at', desde);
+        renderizarBarrasDetalhe('#stats-areas-whats', areaEventos, 'texto_botao', t => t || '(sem área identificada)');
+    }
+
+    // Identifica a plataforma pela URL, reaproveitando a mesma lógica usada
+    // no site público para os ícones das redes sociais.
+    function nomeRedeSocial(url) {
+        const u = (url || '').toLowerCase();
+        if (u.includes('instagram')) return 'Instagram';
+        if (u.includes('youtube') || u.includes('youtu.be')) return 'YouTube';
+        if (u.includes('whatsapp') || u.includes('wa.me')) return 'WhatsApp';
+        if (u.includes('linkedin')) return 'LinkedIn';
+        if (u.includes('facebook')) return 'Facebook';
+        if (u.includes('tiktok')) return 'TikTok';
+        if (u.includes('t.me') || u.includes('telegram')) return 'Telegram';
+        if (u.includes('threads')) return 'Threads';
+        if (u.includes('x.com') || u.includes('twitter')) return 'X (Twitter)';
+        return url || '(link desconhecido)';
+    }
+
+    // Genérico: agrupa uma lista de linhas por um campo, conta e desenha barras
+    // — reaproveitado tanto pelas publicações quanto pelas redes sociais.
+    function renderizarBarrasDetalhe(seletor, linhasBrutas, campo, formatar) {
+        const container = $(seletor);
+        if (!container) return;
+        const contagem = {};
+        (linhasBrutas || []).forEach(l => {
+            const chave = formatar(l[campo]);
+            contagem[chave] = (contagem[chave] || 0) + 1;
+        });
+        const linhas = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+        if (!linhas.length) {
+            container.innerHTML = '<p class="dica">Nenhum clique registrado nesse período ainda.</p>';
+            return;
+        }
+        const max = linhas[0][1];
+        container.innerHTML = linhas.map(([nome, qtd]) => `
+            <div class="stats-linha">
+                <span class="stats-nome">${esc(nome)}</span>
+                <div class="stats-barra-fundo"><div class="stats-barra" style="width:${(qtd / max) * 100}%"></div></div>
+                <span class="stats-qtd">${qtd}</span>
+            </div>`).join('');
+    }
+    if ($('#btn-recarregar-stats')) {
+        $('#btn-recarregar-stats').addEventListener('click', carregarEstatisticas);
+        $('#select-periodo-stats').addEventListener('change', carregarEstatisticas);
+    }
 
     /* ==================================================================== */
     /* 10) SALVAR E PUBLICAR                                                */
@@ -455,6 +908,12 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
 
         coletarCampos();
+        // Guarda o estado atual do Hero como "último preset" — é o que o botão
+        // "Aplicar Último Preset" vai restaurar depois, sempre a versão mais
+        // recente que de fato foi ao ar (não qualquer rascunho não salvo).
+        if (estado.identidade?.heroAltAjustes) {
+            estado.identidade.heroAltUltimoPreset = { ...estado.identidade.heroAltAjustes };
+        }
         const { error } = await db.from('site_config').upsert({ id: 1, ...estado });
 
         btn.disabled = false;
@@ -480,6 +939,7 @@
         btn.classList.add('ativa');
         $('#' + btn.dataset.aba).classList.add('ativa');
         if (btn.dataset.aba === 'aba-leads') carregarLeads();
+        if (btn.dataset.aba === 'aba-estatisticas') carregarEstatisticas();
     });
 
     $('#btn-sair').addEventListener('click', () => Auth.logout());
@@ -503,6 +963,58 @@
     }
 
     /* ==================================================================== */
+    /* MODERAÇÃO DE AVALIAÇÕES PÚBLICAS                                     */
+    /* ==================================================================== */
+    async function carregarAvaliacoesPendentes() {
+        const container = $('#lista-avaliacoes-pendentes');
+        if (!container) return;
+
+        const { data, error } = await db
+            .from('avaliacoes')
+            .select('id, nome, texto, nota, created_at')
+            .eq('aprovado', false)
+            .order('created_at', { ascending: true });
+
+        const badge = $('#badge-avaliacoes');
+
+        if (error || !data?.length) {
+            container.innerHTML = '<p class="dica">Nenhuma avaliação pendente no momento.</p>';
+            if (badge) badge.style.display = 'none';
+            return;
+        }
+
+        if (badge) {
+            badge.textContent = data.length;
+            badge.style.display = 'inline-block';
+        }
+
+        container.innerHTML = data.map(av => `
+            <div class="item-dinamico" data-id="${av.id}">
+                <div style="flex:1">
+                    <strong>${esc(av.nome)}</strong> — ${'⭐'.repeat(av.nota)}
+                    <p style="margin:6px 0 0">${esc(av.texto)}</p>
+                </div>
+                <button type="button" class="btn-aprovar-avaliacao" data-id="${av.id}">Aprovar</button>
+                <button type="button" class="btn-rejeitar-avaliacao" data-id="${av.id}">Rejeitar</button>
+            </div>`).join('');
+
+        container.querySelectorAll('.btn-aprovar-avaliacao').forEach(btn =>
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                await db.from('avaliacoes').update({ aprovado: true }).eq('id', btn.dataset.id);
+                carregarAvaliacoesPendentes();
+            }));
+
+        container.querySelectorAll('.btn-rejeitar-avaliacao').forEach(btn =>
+            btn.addEventListener('click', async () => {
+                if (!confirm('Rejeitar (e apagar) esta avaliação?')) return;
+                btn.disabled = true;
+                await db.from('avaliacoes').delete().eq('id', btn.dataset.id);
+                carregarAvaliacoesPendentes();
+            }));
+    }
+
+    /* ==================================================================== */
     /* INICIALIZAÇÃO                                                        */
     /* ==================================================================== */
     await carregar();
@@ -520,6 +1032,10 @@
     passo('listas-dinamicas', ligarListas);
     passo('layout-builder', renderizarLayout);
     passo('galeria-temas', renderizarTemas);
+    passo('editor-hero', ligarEditorHero);
+    passo('pares-slider-numero', ligarParesSliderNumero);
     passo('audio', ligarAudio);
     passo('preview-tema', aplicarPreview);   // painel abre já com o tema do cliente
+    passo('avaliacoes-pendentes', carregarAvaliacoesPendentes);
+    passo('leads-badge', carregarLeads); // carrega já na abertura, para o badge aparecer sem precisar clicar na aba
 })();

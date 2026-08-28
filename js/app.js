@@ -98,6 +98,38 @@
         setTexto('edit-slogan', d.slogan);
         setTexto('edit-sobre-texto', d.sobre);
         setTexto('edit-endereco', d.endereco);
+
+        /* --- Google Meu Negócio: mapa embutido, rotas e selo de avaliações --- */
+        blindado('google business', () => {
+            const integ = d.integracao || {};
+
+            // Mapa embutido: usa o próprio endereço já cadastrado, sem precisar
+            // de chave de API nem custo — funciona para qualquer cliente do template.
+            if (d.endereco) {
+                const iframe = $('#iframe-mapa-endereco');
+                if (iframe) {
+                    iframe.src = `https://www.google.com/maps?q=${encodeURIComponent(d.endereco)}&z=16&output=embed`;
+                    $('#mapa-endereco-embed').style.display = '';
+                }
+            }
+
+            // Botão "Ver rotas": usa o link exato configurado no Admin (mais preciso
+            // que reconstruir a partir do texto do endereço).
+            if (integ.googleLinkMapa) {
+                const btnRotas = $('#btn-rotas-google');
+                btnRotas.href = integ.googleLinkMapa;
+                btnRotas.style.display = '';
+            }
+
+            // Selo de avaliações do Google (nota/quantidade atualizadas manualmente
+            // no Admin — puxar isso ao vivo exigiria a API paga do Google Places).
+            if (integ.googleNota && integ.googleLinkAvaliacoes) {
+                setTexto('google-badge-nota', integ.googleNota);
+                setTexto('google-badge-qtd', integ.googleQtd || '');
+                $('#google-badge-link').href = integ.googleLinkAvaliacoes;
+                $('#google-badge').style.display = '';
+            }
+        });
         setTexto('edit-telefone', d.tel);
         setTexto('edit-email', d.email);
         setTexto('edit-horario', d.horario);
@@ -112,6 +144,106 @@
         if (idv.favicon) { $('#edit-logo').src = idv.favicon; $('#site-favicon').href = idv.favicon; }
         if (idv.fundo) $('#hero').style.backgroundImage = `url('${idv.fundo}')`;
 
+        // Modelo alternativo do Hero: foto da pessoa recortada à direita,
+        // texto alinhado à esquerda, com gradiente automático da esquerda
+        // (escura) para a direita (clara). Some sozinho se desativado ou
+        // sem a foto da pessoa enviada — o modelo padrão nunca é afetado.
+        blindado('hero modelo alternativo', () => {
+            const hero = $('#hero');
+            const ativo = !!(idv.heroModeloAlt && idv.heroPessoaAlt);
+            hero.classList.toggle('hero-alt', ativo);
+            if (!ativo) return;
+
+            if (idv.heroFundoAlt) hero.style.backgroundImage = `url('${idv.heroFundoAlt}')`;
+            $('#hero-pessoa-alt').src = idv.heroPessoaAlt;
+
+            const conteudo = hero.querySelector('.hero-content');
+            const foto = $('#hero-pessoa-alt');
+            const overlay = hero.querySelector('.hero-overlay');
+            const elementosTexto = {
+                titulo: hero.querySelector('h1'),
+                oab: hero.querySelector('.oab'),
+                slogan: hero.querySelector('.slogan'),
+            };
+
+            // Ajustes finos (posição, rotação, tamanho, fonte, degradê) só fazem
+            // sentido em telas largas — no celular, o CSS já assume um layout
+            // de segurança sozinho (@media max-width:768px). Só que ESTILO
+            // INLINE sempre vence regra de CSS, mesmo dentro de @media — por
+            // isso, sem essa checagem, os ajustes do PC "vazavam" pro celular
+            // e atropelavam o layout de segurança. Por isso aplicamos (ou
+            // LIMPAMOS) esses estilos conforme a largura da tela.
+            function aplicarAjustesFinos() {
+                const desktop = window.matchMedia('(min-width: 769px)').matches;
+
+                if (!desktop) {
+                    // Celular: remove qualquer estilo inline, devolvendo o controle
+                    // 100% pro CSS (que já sabe como ficar bonito em tela estreita).
+                    if (conteudo) { conteudo.style.marginLeft = ''; conteudo.style.marginTop = ''; }
+                    foto.style.transform = '';
+                    if (overlay) overlay.style.background = '';
+                    Object.values(elementosTexto).forEach(el => {
+                        if (!el) return;
+                        el.style.transform = ''; el.style.fontSize = ''; el.style.fontFamily = '';
+                    });
+                    return;
+                }
+
+                // Ajustes feitos no editor visual do Admin. Sem ajustes salvos,
+                // usa os mesmos valores padrão já fixados no CSS.
+                const aj = idv.heroAltAjustes || {};
+                const textoX = aj.textoX ?? 0, textoY = aj.textoY ?? 0;
+                const fotoX = aj.fotoX ?? 0, fotoEscala = (aj.fotoEscala ?? 100) / 100;
+                const gi = aj.gradInicio ?? 92, gf = aj.gradFim ?? 20;
+                const pa = aj.gradPontoA ?? 42, pb = aj.gradPontoB ?? 88;
+
+                // margin (não transform!) no texto — evita conflito com a animação
+                // de entrada do hero, que já usa "transform" nos próprios keyframes.
+                if (conteudo) { conteudo.style.marginLeft = textoX + '%'; conteudo.style.marginTop = textoY + '%'; }
+
+                foto.style.transform = `translateX(${fotoX}%) scale(${fotoEscala})`;
+
+                if (overlay) overlay.style.background = `linear-gradient(to right,
+                    color-mix(in srgb, var(--primary) ${gi}%, transparent) 0%,
+                    color-mix(in srgb, var(--primary) ${gi}%, transparent) ${pa}%,
+                    color-mix(in srgb, var(--primary) ${gf}%, transparent) ${pb}%,
+                    color-mix(in srgb, var(--primary) ${gf}%, transparent) 100%)`;
+
+                // Rotação, tamanho e fonte de cada texto do hero (título, OAB,
+                // slogan) — Fonte reaproveita o catálogo do seletor "Fonte
+                // Personalizada" (Aparência), mas escolhida à parte.
+                Object.entries(elementosTexto).forEach(([id, el]) => {
+                    if (!el) return;
+                    const cfg = aj.elementos?.[id] || {};
+                    el.style.transform = `rotate(${cfg.rotacao ?? 0}deg)`;
+                    if (cfg.tamanho) el.style.fontSize = cfg.tamanho + 'px';
+                    const fonteEscolhida = cfg.fonte && window.ThemeEngine
+                        && ThemeEngine.listarFontes().find(f => f.id === cfg.fonte);
+                    el.style.fontFamily = fonteEscolhida ? fonteEscolhida.fontDisplay : '';
+                });
+            }
+
+            aplicarAjustesFinos();
+            // Reaplica ao girar o celular ou redimensionar a janela — troca de
+            // faixa (mobile ↔ desktop) sem precisar recarregar a página.
+            window.matchMedia('(min-width: 769px)').addEventListener('change', aplicarAjustesFinos);
+        });
+
+        // Fundo do Corpo: imagem opcional com opacidade ajustável, aplicada por
+        // trás de todas as seções (exceto Hero, header e rodapé). Sem imagem
+        // configurada, o site segue 100% igual ao padrão de sempre.
+        blindado('fundo do corpo', () => {
+            // A imagem fica guardada mesmo desativada — só o interruptor
+            // 'fundoCorpoAtivo' decide se o efeito aparece no site público.
+            if (idv.fundoCorpo && idv.fundoCorpoAtivo) {
+                document.body.style.setProperty('--fundo-corpo-img', `url('${idv.fundoCorpo}')`);
+                document.body.style.setProperty('--fundo-corpo-opacidade', (idv.fundoCorpoOpacidade ?? 40) / 100);
+                document.body.classList.add('tem-fundo-corpo');
+            } else {
+                document.body.classList.remove('tem-fundo-corpo');
+            }
+        });
+
         /* --- Fotos do espaço: galeria ILIMITADA (retrocompatível com f1..f3) --- */
         blindado('fotos do espaço', () => {
             const fotos = Array.isArray(d.fotos?.lista) && d.fotos.lista.length
@@ -119,7 +251,9 @@
                 : ['f1', 'f2', 'f3'].map(k => d.fotos?.[k]).filter(Boolean);
             if (fotos.length) {
                 $('#container-fotos-espaco').innerHTML = fotos.map(src => `
-                    <div class="office-photo"><img src="${esc(src)}" alt="Nosso espaço" loading="lazy"></div>`).join('');
+                    <div class="office-photo" data-fullsrc="${esc(src)}">
+                        <div class="office-photo-bg" style="background-image:url('${esc(src)}')"></div>
+                        <img src="${esc(src)}" alt="Nosso espaço" loading="lazy"></div>`).join('');
             } else {
                 $('#nosso-espaco').style.display = 'none'; // sem fotos → seção some
             }
@@ -128,28 +262,61 @@
         /* --- Áreas de atuação --- */
         blindado('áreas', () => {
             if (d.areas?.length) {
-                $('#container-servicos').innerHTML = d.areas.map((a, i) => `
+                const numWhats = d.whats ? d.whats.replace(/\D/g, '') : '';
+                $('#container-servicos').innerHTML = d.areas.map((a, i) => {
+                    const botaoWhats = numWhats ? `
+                        <a class="card-whats-btn" target="_blank" rel="noopener"
+                           data-evento="cta_whatsapp_area" data-titulo="${esc(a.t)}"
+                           href="https://wa.me/${numWhats}?text=${encodeURIComponent('Olá! Gostaria de mais informações sobre ' + a.t + '.')}">
+                            <i class="fab fa-whatsapp"></i> Falar sobre isso
+                        </a>` : '';
+                    return `
                     <div class="card" style="--i:${i}">
                         <i class="${esc(a.i)} gold-3d"></i>
                         <h3>${esc(a.t)}</h3>
                         <p>${esc(a.d)}</p>
-                    </div>`).join('');
+                        ${botaoWhats}
+                    </div>`;
+                }).join('');
             }
         });
 
-        /* --- Depoimentos --- */
-        blindado('depoimentos', () => {
+        /* --- Depoimentos (curados no Admin + avaliações públicas aprovadas) --- */
+        blindado('depoimentos', async () => {
             const contDep = $('#container-depoimentos');
-            if (d.depoimentos?.length) {
-                contDep.innerHTML = d.depoimentos.map(dep => `
+            const curados = (d.depoimentos || []).map(dep => ({ n: dep.n, t: dep.t, nota: 5 }));
+
+            let publicas = [];
+            try {
+                const { data: avals } = await db
+                    .from('avaliacoes')
+                    .select('nome, texto, nota, created_at')
+                    .eq('aprovado', true)
+                    .order('created_at', { ascending: false });
+                publicas = (avals || []).map(a => ({ n: a.nome, t: a.texto, nota: a.nota }));
+            } catch (erro) {
+                console.warn('[app.js] Avaliações públicas indisponíveis:', erro);
+            }
+
+            const todas = [...publicas, ...curados];
+
+            const wrapper = $('.testimonial-wrapper');
+            if (todas.length) {
+                contDep.innerHTML = todas.map(dep => {
+                    const primeiroNome = (dep.n || '').trim().split(/\s+/)[0] || dep.n;
+                    return `
                     <div class="review-card">
-                        <div class="stars">⭐⭐⭐⭐⭐</div>
+                        <span class="client-name">${esc(primeiroNome)}</span>
+                        <div class="stars">${'⭐'.repeat(dep.nota)}${'☆'.repeat(5 - dep.nota)}</div>
                         <p>"${esc(dep.t)}"</p>
-                        <span class="client-name">— ${esc(dep.n)}</span>
-                    </div>`).join('');
+                    </div>`;
+                }).join('');
+                wrapper.style.display = '';
             } else {
-                // Sem depoimentos cadastrados → seção some sozinha (site nunca fica "oco")
-                $('#depoimentos').style.display = 'none';
+                // Sem depoimentos ainda → some só o carrossel, NUNCA a seção inteira
+                // (o formulário de avaliação pública mora aqui e precisa continuar visível
+                // para que a primeira avaliação possa ser enviada).
+                wrapper.style.display = 'none';
             }
         });
 
@@ -173,7 +340,7 @@
                     }
                     return `<div class="pub-container">
                                 <p class="pub-desc">${esc(p.d)}</p>
-                                <div class="pub-item"><a href="${esc(p.l)}" target="_blank" rel="noopener" data-evento="pub_click">${thumb}</a></div>
+                                <div class="pub-item"><a href="${esc(p.l)}" target="_blank" rel="noopener" data-evento="pub_click" data-titulo="${esc((p.d || '').slice(0, 60))}">${thumb}</a></div>
                             </div>`;
                 }).join('');
             } else {
@@ -239,15 +406,39 @@
         } catch { /* automação nunca pode derrubar o site */ }
     }
 
+    // Contabiliza cada carregamento da página como uma visita — dispara e
+    // esquece, nunca atrasa nem trava a primeira pintura do site.
+    function registrarVisita() {
+        db.from('site_eventos').insert([{
+            evento: 'visita_site',
+            pagina_url: location.pathname,
+        }]).then(() => {}, () => {});
+    }
+
     // CTAs: um listener delegado cobre botões estáticos E gerados dinamicamente
     function ligarRastreioDeCliques() {
         document.addEventListener('click', (e) => {
             const alvo = e.target.closest('[data-evento]');
             if (!alvo) return;
+            // Publicações não têm texto visível (só a miniatura) — usamos a
+            // descrição/tema cadastrada no Admin via data-titulo, se existir.
+            const textoBotao = alvo.dataset.titulo || alvo.innerText.trim().slice(0, 60);
+            const destino = alvo.href || null;
+
             dispararWebhook(config?.integracao?.webhookEventos, {
                 ...payloadBase(alvo.dataset.evento),
-                botao: { texto: alvo.innerText.trim().slice(0, 60), destino: alvo.href || null },
+                botao: { texto: textoBotao, destino },
             });
+
+            // Persiste no banco também (além do webhook), para o painel de
+            // estatísticas do Admin poder consultar depois. Dispara e esquece —
+            // nunca atrasa nem trava o clique do visitante.
+            db.from('site_eventos').insert([{
+                evento: alvo.dataset.evento,
+                texto_botao: textoBotao,
+                destino,
+                pagina_url: location.pathname,
+            }]).then(() => {}, () => {});
         });
     }
 
@@ -273,6 +464,9 @@
                 return mostrarFeedback('Preencha ao menos o nome e a mensagem.', 'erro');
             }
 
+            const btnWhats = $('#whats-pos-lead');
+            if (btnWhats) btnWhats.style.display = 'none'; // esconde de uma tentativa anterior, se houver
+
             btn.disabled = true;
             const textoOriginal = btn.innerText;
             btn.innerText = 'Enviando...';
@@ -286,6 +480,16 @@
                     ...payloadBase('novo_lead'),
                     lead,
                 });
+
+                // Ponte pro WhatsApp: leva a mensagem que a pessoa já escreveu,
+                // sem precisar digitar tudo de novo lá.
+                if (btnWhats && config?.whats) {
+                    const numero = config.whats.replace(/\D/g, '');
+                    const texto = `Olá, meu nome é ${lead.nome}. Assunto: ${lead.assunto}. ${lead.mensagem}`;
+                    btnWhats.href = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+                    btnWhats.style.display = 'inline-flex';
+                }
+
                 form.reset();
                 mostrarFeedback('Mensagem enviada com sucesso! Retornaremos em breve. ✔', 'sucesso');
             } else {
@@ -298,6 +502,58 @@
         function mostrarFeedback(texto, tipo) {
             feedback.textContent = texto;
             feedback.className = `form-feedback visivel ${tipo}`;
+            setTimeout(() => feedback.classList.remove('visivel'), 6000);
+        }
+    }
+
+    /* ==================================================================== */
+    /* 5b) FORMULÁRIO DE AVALIAÇÃO PÚBLICA (entra pendente de aprovação)    */
+    /* ==================================================================== */
+    function ligarAvaliacoes() {
+        const form = $('#form-avaliacao');
+        if (!form) return; // seção pode não existir em versões antigas do template
+
+        const estrelasEl = $('#av-estrelas');
+        const feedback = $('#av-feedback');
+
+        estrelasEl.addEventListener('click', (e) => {
+            const valor = e.target.dataset.valor;
+            if (!valor) return;
+            estrelasEl.dataset.nota = valor;
+            [...estrelasEl.children].forEach((star, i) => {
+                star.classList.toggle('ativa', i < valor);
+            });
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nota = Number(estrelasEl.dataset.nota || 0);
+            const nome = $('#av-nome').value.trim();
+            const texto = $('#av-texto').value.trim();
+
+            if (!nome || !texto || nota < 1) {
+                return mostrarFeedback('Preencha seu nome, o texto e escolha uma nota.', 'erro');
+            }
+
+            const btn = form.querySelector('button');
+            btn.disabled = true;
+
+            const { error } = await db.from('avaliacoes').insert([{ nome, texto, nota }]);
+
+            if (!error) {
+                form.reset();
+                estrelasEl.dataset.nota = '0';
+                [...estrelasEl.children].forEach(s => s.classList.remove('ativa'));
+                mostrarFeedback('Obrigado! Sua avaliação foi enviada e aparecerá após aprovação. ✔', 'sucesso');
+            } else {
+                mostrarFeedback('Não foi possível enviar agora. Tente novamente em instantes.', 'erro');
+            }
+            btn.disabled = false;
+        });
+
+        function mostrarFeedback(texto, tipo) {
+            feedback.textContent = texto;
+            feedback.className = `av-feedback visivel ${tipo}`;
             setTimeout(() => feedback.classList.remove('visivel'), 6000);
         }
     }
@@ -371,8 +627,10 @@
         }
 
         AudioEngine.ligarNoDom();                    // sons (se ativos no Admin)
+        registrarVisita();                           // contabiliza a visita, sem travar nada
         ligarRastreioDeCliques();
         ligarFormulario();
+        ligarAvaliacoes();
         ligarReveal();
         ligarCarrosseis();
 
@@ -385,4 +643,32 @@
     } else {
         iniciar();
     }
+
+    /* --- Lightbox de fotos (clique para ampliar) --- */
+    (() => {
+        const overlay = document.createElement('div');
+        overlay.className = 'lightbox-overlay';
+        overlay.innerHTML = `<button type="button" class="lightbox-fechar" aria-label="Fechar">&times;</button>
+            <img class="lightbox-img" alt="">`;
+        document.body.appendChild(overlay);
+        const imgEl = overlay.querySelector('.lightbox-img');
+
+        function abrir(src, alt) {
+            imgEl.src = src;
+            imgEl.alt = alt || '';
+            overlay.classList.add('ativo');
+            document.body.style.overflow = 'hidden';
+        }
+        function fechar() {
+            overlay.classList.remove('ativo');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('click', (e) => {
+            const alvo = e.target.closest('[data-fullsrc]');
+            if (alvo) { abrir(alvo.dataset.fullsrc, alvo.querySelector('img')?.alt); return; }
+            if (e.target === overlay || e.target.closest('.lightbox-fechar')) fechar();
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fechar(); });
+    })();
 })();
