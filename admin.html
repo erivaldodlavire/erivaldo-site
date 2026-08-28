@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Fontes de TODOS os temas (o theme-engine só troca a variável) -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600;700;800;900&family=Roboto:wght@400;700&family=Poppins:wght@500;700&family=Inter:wght@400;600;700&family=Oswald:wght@500;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600;700;800;900&family=Roboto:wght@400;700&family=Poppins:wght@500;700&family=Inter:wght@400;600;700&family=Oswald:wght@500;700&family=Orbitron:wght@600;800&family=Lato:wght@400;700&family=Open+Sans:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- A guarda de autenticação (admin.js) revela o body só após validar a sessão -->
@@ -33,10 +33,11 @@
         <nav class="menu-abas" id="menu-abas">
             <button data-aba="aba-conteudo" class="ativa"><i class="fas fa-pen"></i> Conteúdo</button>
             <button data-aba="aba-identidade"><i class="fas fa-image"></i> Identidade Visual</button>
-            <button data-aba="aba-secoes"><i class="fas fa-layer-group"></i> Seções Dinâmicas</button>
+            <button data-aba="aba-secoes"><i class="fas fa-layer-group"></i> Seções Dinâmicas <span id="badge-avaliacoes" class="badge-notif" style="display:none">0</span></button>
             <button data-aba="aba-layout"><i class="fas fa-arrows-up-down"></i> Layout</button>
             <button data-aba="aba-aparencia"><i class="fas fa-palette"></i> Aparência &amp; Som</button>
-            <button data-aba="aba-leads"><i class="fas fa-inbox"></i> Leads</button>
+            <button data-aba="aba-leads"><i class="fas fa-inbox"></i> Leads <span id="badge-leads" class="badge-notif" style="display:none">0</span></button>
+            <button data-aba="aba-estatisticas"><i class="fas fa-chart-line"></i> Estatísticas</button>
             <button data-aba="aba-integracoes"><i class="fas fa-plug"></i> Integrações</button>
             <button data-aba="aba-conta"><i class="fas fa-user-shield"></i> Conta</button>
         </nav>
@@ -76,7 +77,31 @@
                         <div class="upload-item" data-chave="identidade.favicon"><div class="moldura"><i class="fas fa-plus vazio"></i><img src="" alt=""></div><p>Logo</p></div>
                         <div class="upload-item" data-chave="identidade.perfil"><div class="moldura"><i class="fas fa-plus vazio"></i><img src="" alt=""></div><p>Foto de Perfil</p></div>
                         <div class="upload-item" data-chave="identidade.fundo"><div class="moldura"><i class="fas fa-plus vazio"></i><img src="" alt=""></div><p>Fundo do Topo (Hero)</p></div>
+                        <div class="upload-item" data-chave="identidade.fundoCorpo"><div class="moldura"><i class="fas fa-plus vazio"></i><img src="" alt=""></div><p>Fundo do Corpo (opcional)</p></div>
                     </div>
+                </div>
+                <div class="bloco" id="bloco-fundo-corpo">
+                    <h3><i class="fas fa-layer-group"></i> Fundo do Corpo do Site</h3>
+                    <p class="dica">Uma imagem de fundo com opacidade ajustável, aplicada por trás de todas as seções — do "Sobre Mim" até "Fale Conosco" — criando um visual mais moderno, como uma "marca d'água" fotográfica atrás do conteúdo. Envie a foto na moldura "Fundo do Corpo" acima. A imagem fica guardada mesmo desativada — pode ligar e desligar quando quiser, sem precisar enviar de novo.</p>
+                    <div class="linha-audio" style="margin-bottom:14px">
+                        <label class="interruptor" style="margin:0"><input type="checkbox" id="chk-fundo-corpo"><span></span></label>
+                        <span style="font-size:0.82rem; font-weight:700;">Ativar máscara de fundo</span>
+                    </div>
+                    <label>Opacidade da imagem <span id="label-fundo-corpo-opacidade">40%</span></label>
+                    <div class="controle-slider"><input type="range" id="slider-fundo-corpo-opacidade" min="0" max="100" value="40"><input type="number" id="num-fundo-corpo-opacidade" min="0" max="100" value="40" class="numero-parceiro"></div>
+                </div>
+                <div class="bloco">
+                    <h3><i class="fas fa-panorama"></i> Modelo Alternativo do Hero</h3>
+                    <p class="dica">Layout de topo com a foto da pessoa "recortada" à direita e o texto alinhado à esquerda. Envie a foto da pessoa em <strong>PNG com fundo transparente</strong> para o recorte funcionar. As fotos ficam guardadas mesmo desativado — pode ligar e desligar quando quiser, sem reenviar. No celular, o site volta automaticamente ao modelo padrão (a foto lateral não cabe bem em telas estreitas).</p>
+                    <div class="linha-audio" style="margin-bottom:14px">
+                        <label class="interruptor" style="margin:0"><input type="checkbox" id="chk-hero-alt"><span></span></label>
+                        <span style="font-size:0.82rem; font-weight:700;">Ativar modelo alternativo do Hero</span>
+                    </div>
+                    <div class="grade-uploads">
+                        <div class="upload-item" data-chave="identidade.heroFundoAlt"><div class="moldura"><i class="fas fa-plus vazio"></i><img src="" alt=""></div><p>Fundo (Escritório)</p></div>
+                        <div class="upload-item" data-chave="identidade.heroPessoaAlt"><div class="moldura"><i class="fas fa-plus vazio"></i><img src="" alt=""></div><p>Foto da Pessoa (PNG recortado)</p></div>
+                    </div>
+                    <button type="button" class="btn-adicionar" id="btn-abrir-editor-hero" style="margin-top:14px"><i class="fas fa-sliders"></i> Ajustar Posição e Degradê</button>
                 </div>
                 <div class="bloco">
                     <h3><i class="fas fa-building"></i> Fotos do Espaço (galeria ilimitada)</h3>
@@ -100,6 +125,11 @@
                     <h3><i class="fas fa-star"></i> Depoimentos</h3>
                     <div id="lista-depoimentos"></div>
                     <button type="button" class="btn-adicionar" data-add="depoimentos"><i class="fas fa-plus"></i> Adicionar Depoimento</button>
+                </div>
+                <div class="bloco">
+                    <h3><i class="fas fa-clipboard-check"></i> Avaliações Pendentes</h3>
+                    <p class="dica">Avaliações enviadas por visitantes do site aparecem aqui até você aprovar ou rejeitar.</p>
+                    <div id="lista-avaliacoes-pendentes"></div>
                 </div>
                 <div class="bloco">
                     <h3><i class="fas fa-video"></i> Publicações (YouTube / Instagram)</h3>
@@ -142,6 +172,11 @@
                     </div>
                 </div>
                 <div class="bloco">
+                    <h3><i class="fas fa-font"></i> Fonte Personalizada (opcional)</h3>
+                    <p class="dica">Substitui a fonte do tema escolhido em todo o site (títulos e textos), mantendo cores e sons como estão. Deixe em "Padrão do tema" para não alterar nada.</p>
+                    <select id="select-fonte"></select>
+                </div>
+                <div class="bloco">
                     <h3><i class="fas fa-volume-high"></i> Sons de Interface</h3>
                     <div class="linha-audio">
                         <label class="interruptor" style="margin:0"><input type="checkbox" id="chk-audio"><span></span></label>
@@ -160,10 +195,41 @@
                     <h3><i class="fas fa-inbox"></i> Mensagens Recebidas <button type="button" class="btn-adicionar" id="btn-recarregar-leads" style="float:right; background:var(--primary); color:var(--accent);"><i class="fas fa-rotate"></i> Atualizar</button></h3>
                     <div style="overflow-x:auto">
                         <table class="tabela-leads">
-                            <thead><tr><th>Data</th><th>Nome</th><th>Contato</th><th>Assunto</th><th>Mensagem</th><th></th></tr></thead>
-                            <tbody id="corpo-leads"><tr><td colspan="6" class="vazio-leads">Carregando...</td></tr></tbody>
+                            <thead><tr><th>Status</th><th>Data</th><th>Nome</th><th>Contato</th><th>Assunto</th><th>Mensagem</th><th></th></tr></thead>
+                            <tbody id="corpo-leads"><tr><td colspan="7" class="vazio-leads">Carregando...</td></tr></tbody>
                         </table>
                     </div>
+                </div>
+            </section>
+
+            <!-- ================= ABA 6b: ESTATÍSTICAS ================= -->
+            <section class="aba" id="aba-estatisticas">
+                <div class="bloco">
+                    <h3><i class="fas fa-chart-line"></i> Estatísticas de Engajamento <button type="button" class="btn-adicionar" id="btn-recarregar-stats" style="float:right; background:var(--primary); color:var(--accent);"><i class="fas fa-rotate"></i> Atualizar</button></h3>
+                    <p class="dica">Cliques em botões-chave do site (WhatsApp, Consultoria, publicações, redes sociais) e leads recebidos, contados automaticamente.</p>
+                    <label>Período</label>
+                    <select id="select-periodo-stats">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30" selected>Últimos 30 dias</option>
+                        <option value="90">Últimos 90 dias</option>
+                        <option value="0">Desde o início</option>
+                    </select>
+                    <div class="stats-resumo" id="stats-resumo"></div>
+                    <div class="stats-barras" id="stats-barras"></div>
+                </div>
+                <div class="bloco">
+                    <h3><i class="fas fa-video"></i> Publicações mais clicadas (por tema)</h3>
+                    <p class="dica">Usa a descrição cadastrada em cada publicação para identificar qual tema mais atrai cliques.</p>
+                    <div class="stats-barras" id="stats-publicacoes"></div>
+                </div>
+                <div class="bloco">
+                    <h3><i class="fas fa-share-nodes"></i> Redes Sociais mais clicadas</h3>
+                    <div class="stats-barras" id="stats-redes"></div>
+                </div>
+                <div class="bloco">
+                    <h3><i class="fab fa-whatsapp"></i> Áreas mais procuradas via WhatsApp</h3>
+                    <p class="dica">Quando alguém clica no botão de WhatsApp dentro de uma Área de Atuação específica.</p>
+                    <div class="stats-barras" id="stats-areas-whats"></div>
                 </div>
             </section>
 
@@ -176,6 +242,18 @@
                     <input id="cfg-webhook-leads" placeholder="https://seu-n8n.com/webhook/leads">
                     <label>Webhook de Eventos (cliques e intenções)</label>
                     <input id="cfg-webhook-eventos" placeholder="https://seu-n8n.com/webhook/eventos">
+                </div>
+                <div class="bloco">
+                    <h3><i class="fab fa-google"></i> Google Meu Negócio</h3>
+                    <p class="dica">Preencha para exibir o mapa de rotas e o selo de avaliações do Google direto no site. Atualize a nota/quantidade manualmente sempre que quiser (não é automático).</p>
+                    <div class="grade-2">
+                        <div><label>Nota no Google (ex: 5.0)</label><input id="cfg-google-nota" placeholder="5.0"></div>
+                        <div><label>Quantidade de avaliações</label><input id="cfg-google-qtd" placeholder="6"></div>
+                    </div>
+                    <label>Link da ficha do Google (avaliações)</label>
+                    <input id="cfg-google-link-avaliacoes" placeholder="https://share.google/...">
+                    <label>Link do Google Maps (botão "Ver rotas")</label>
+                    <input id="cfg-google-link-mapa" placeholder="https://maps.app.goo.gl/...">
                 </div>
             </section>
 
@@ -199,6 +277,91 @@
     </div>
 
     <!-- Botão mestre + toast de feedback -->
+    <!-- ===================== EDITOR VISUAL DO HERO ===================== -->
+    <div class="modal-overlay" id="modal-hero-editor">
+        <div class="modal-caixa">
+            <div class="modal-fixo">
+                <div class="modal-cabecalho">
+                    <h3><i class="fas fa-sliders"></i> Ajustar Posição e Degradê</h3>
+                    <button type="button" class="modal-fechar" id="fechar-editor-hero">&times;</button>
+                </div>
+                <div class="hero-preview-wrapper">
+                    <div class="hero-preview" id="hero-preview">
+                        <img src="" alt="" id="preview-foto-pessoa" class="preview-foto-pessoa">
+                        <div class="preview-overlay" id="preview-overlay">
+                            <div class="preview-content" id="preview-content">
+                                <h4 id="preview-nome">Nome</h4>
+                                <p id="preview-oab"></p>
+                                <p id="preview-slogan"></p>
+                                <div class="preview-btns">
+                                    <span class="preview-btn-primary">Solicitar Consultoria</span>
+                                    <span class="preview-btn-whats"><i class="fab fa-whatsapp"></i> WhatsApp</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="editor-nota"><i class="fas fa-circle-info"></i> Tudo aqui é salvo automaticamente junto com o botão <strong>"Salvar e Publicar"</strong> — não existe um botão de salvar separado nesta janela.</p>
+
+            <div class="linha-audio" style="margin-bottom:14px">
+                <label class="interruptor" style="margin:0"><input type="checkbox" id="chk-hero-alt-popup"><span></span></label>
+                <span style="font-size:0.82rem; font-weight:700;">Ativar modelo alternativo do Hero</span>
+            </div>
+
+            <div class="editor-controles">
+                <div class="editor-secao">
+                    <h4>Nome / Título</h4>
+                    <textarea id="pop-nome" rows="2" placeholder="Seu nome completo (Enter quebra a linha)"></textarea>
+                    <div class="grade-2">
+                        <div><label>Tamanho <span id="lbl-titulo-tamanho">34px</span></label><div class="controle-slider"><input type="range" id="rng-titulo-tamanho" min="16" max="60" value="34"><input type="number" id="num-titulo-tamanho" min="16" max="60" value="34" class="numero-parceiro"></div></div>
+                        <div><label>Rotação <span id="lbl-titulo-rotacao">0°</span></label><div class="controle-slider"><input type="range" id="rng-titulo-rotacao" min="-360" max="360" value="0"><input type="number" id="num-titulo-rotacao" min="-360" max="360" value="0" class="numero-parceiro"></div></div>
+                    </div>
+                    <label>Fonte</label><select id="select-titulo-fonte"></select>
+                </div>
+                <div class="editor-secao">
+                    <h4>Registro Profissional (OAB, CREA, CRM...)</h4>
+                    <textarea id="pop-oab" rows="2" placeholder="Seu registro profissional (Enter quebra a linha)"></textarea>
+                    <div class="grade-2">
+                        <div><label>Tamanho <span id="lbl-oab-tamanho">17px</span></label><div class="controle-slider"><input type="range" id="rng-oab-tamanho" min="10" max="34" value="17"><input type="number" id="num-oab-tamanho" min="10" max="34" value="17" class="numero-parceiro"></div></div>
+                        <div><label>Rotação <span id="lbl-oab-rotacao">0°</span></label><div class="controle-slider"><input type="range" id="rng-oab-rotacao" min="-360" max="360" value="0"><input type="number" id="num-oab-rotacao" min="-360" max="360" value="0" class="numero-parceiro"></div></div>
+                    </div>
+                    <label>Fonte</label><select id="select-oab-fonte"></select>
+                </div>
+                <div class="editor-secao">
+                    <h4>Slogan</h4>
+                    <textarea id="pop-slogan" rows="2" placeholder="Seu slogan profissional (Enter quebra a linha)"></textarea>
+                    <div class="grade-2">
+                        <div><label>Tamanho <span id="lbl-slogan-tamanho">20px</span></label><div class="controle-slider"><input type="range" id="rng-slogan-tamanho" min="12" max="40" value="20"><input type="number" id="num-slogan-tamanho" min="12" max="40" value="20" class="numero-parceiro"></div></div>
+                        <div><label>Rotação <span id="lbl-slogan-rotacao">0°</span></label><div class="controle-slider"><input type="range" id="rng-slogan-rotacao" min="-360" max="360" value="0"><input type="number" id="num-slogan-rotacao" min="-360" max="360" value="0" class="numero-parceiro"></div></div>
+                    </div>
+                    <label>Fonte</label><select id="select-slogan-fonte"></select>
+                </div>
+                <div class="grade-2">
+                    <div><label>Texto — Horizontal</label><div class="controle-slider"><input type="range" id="rng-texto-x" min="-20" max="20" value="0"><input type="number" id="num-texto-x" min="-20" max="20" value="0" class="numero-parceiro"></div></div>
+                    <div><label>Texto — Vertical</label><div class="controle-slider"><input type="range" id="rng-texto-y" min="-20" max="20" value="0"><input type="number" id="num-texto-y" min="-20" max="20" value="0" class="numero-parceiro"></div></div>
+                </div>
+                <div class="grade-2" style="margin-top:14px">
+                    <div><label>Foto — Horizontal</label><div class="controle-slider"><input type="range" id="rng-foto-x" min="-20" max="20" value="0"><input type="number" id="num-foto-x" min="-20" max="20" value="0" class="numero-parceiro"></div></div>
+                    <div><label>Foto — Tamanho</label><div class="controle-slider"><input type="range" id="rng-foto-escala" min="70" max="130" value="100"><input type="number" id="num-foto-escala" min="70" max="130" value="100" class="numero-parceiro"></div></div>
+                </div>
+                <div class="grade-2">
+                    <div><label>Degradê — Início (escuro) <span id="lbl-grad-inicio">92%</span></label><div class="controle-slider"><input type="range" id="rng-grad-inicio" min="0" max="100" value="92"><input type="number" id="num-grad-inicio" min="0" max="100" value="92" class="numero-parceiro"></div></div>
+                    <div><label>Degradê — Fim (claro) <span id="lbl-grad-fim">20%</span></label><div class="controle-slider"><input type="range" id="rng-grad-fim" min="0" max="100" value="20"><input type="number" id="num-grad-fim" min="0" max="100" value="20" class="numero-parceiro"></div></div>
+                </div>
+                <div class="grade-2">
+                    <div><label>Onde termina o escuro <span id="lbl-grad-pa">42%</span></label><div class="controle-slider"><input type="range" id="rng-grad-pa" min="0" max="100" value="42"><input type="number" id="num-grad-pa" min="0" max="100" value="42" class="numero-parceiro"></div></div>
+                    <div><label>Onde começa o claro <span id="lbl-grad-pb">88%</span></label><div class="controle-slider"><input type="range" id="rng-grad-pb" min="0" max="100" value="88"><input type="number" id="num-grad-pb" min="0" max="100" value="88" class="numero-parceiro"></div></div>
+                </div>
+                <div class="grade-2" style="margin-top:10px">
+                    <button type="button" class="btn-adicionar" id="btn-resetar-hero" disabled style="background:#8a93a1;">Restaurar Padrão</button>
+                    <button type="button" class="btn-adicionar" id="btn-ultimo-preset" disabled style="background:var(--primary); color:var(--accent);">Aplicar Último Preset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <button type="button" class="btn-salvar-mestre" id="btn-salvar"><i class="fas fa-cloud-arrow-up"></i> Salvar e Publicar</button>
     <div class="toast" id="toast"></div>
 
