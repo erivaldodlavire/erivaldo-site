@@ -137,6 +137,11 @@ body.carregando .whats-flutuante {
 .nav-menu a:not(.btn-contato-nav):hover::after { width: 100%; }
 .btn-contato-nav { background: var(--accent); color: var(--primary) !important; padding: 9px 16px; border-radius: 5px; font-weight: 800; }
 
+/* Botão do menu mobile (☰): só aparece em telas estreitas (ver @media). */
+.nav-toggle { display: none; }
+/* Âncoras não ficam escondidas atrás do header fixo ao rolar até a seção. */
+section[id] { scroll-margin-top: 74px; }
+
 /* =============================== HERO =================================== */
 #hero { width: 100%; min-height: 92vh; background: var(--primary) no-repeat center center/cover; margin-top: 70px; position: relative; overflow: hidden; }
 .hero-overlay {
@@ -291,7 +296,15 @@ h2::after {
 
 /* ============================ PUBLICAÇÕES =============================== */
 .pub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
-.pub-desc { font-weight: 700; font-size: 0.88rem; margin-bottom: 10px; }
+/* Título padronizado: mesma fonte/tamanho/peso, no máx. 2 linhas e altura
+   fixa de 2 linhas → todos os cards da fileira ficam com a mesma altura.
+   O texto completo vai no atributo title (tooltip). */
+.pub-desc {
+    font-family: var(--font-body); font-weight: 700; font-size: 0.95rem; line-height: 1.35;
+    height: calc(2 * 1.35em); margin: 0 0 10px; overflow: hidden;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+    overflow-wrap: anywhere;
+}
 .pub-item {
     position: relative; border-radius: 12px; overflow: hidden; height: 200px;
     background: #000; border: 1px solid var(--accent);
@@ -323,7 +336,11 @@ h2::after {
     scrollbar-width: none; -ms-overflow-style: none;
 }
 .carrossel-trilha::-webkit-scrollbar { display: none; }
-.carrossel-trilha > * { flex: 0 0 clamp(240px, calc(25% - 15px), 420px); scroll-snap-align: start; }
+.carrossel-trilha > * { flex: 0 0 clamp(240px, calc(25% - 15px), 420px); scroll-snap-align: center; }
+/* Poucos slides (sem overflow) ficam centralizados; com overflow as margens
+   auto valem 0 e nada é cortado (justify-content:center cortaria a esquerda). */
+.carrossel-trilha > :first-child { margin-left: auto; }
+.carrossel-trilha > :last-child { margin-right: auto; }
 .carrossel-trilha .office-photo { height: 240px; }
 
 .seta-carrossel {
@@ -441,7 +458,51 @@ footer {
 
 /* ============================= RESPONSIVO =============================== */
 @media (max-width: 768px) {
-    .nav-menu { display: none; }
+    /* Menu mobile: o botão ☰ abre/fecha o painel via classe .menu-aberto
+       (nunca por style inline, que venceria estas regras responsivas). */
+    .logo-area { min-width: 0; flex: 1; margin-right: 12px; }
+    .logo-text { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-toggle {
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        width: 44px; height: 44px; padding: 0; cursor: pointer;
+        background: transparent; border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+    }
+    .nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .nav-toggle-barras, .nav-toggle-barras::before, .nav-toggle-barras::after {
+        display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px;
+        transition: transform 0.25s, background 0.25s;
+    }
+    .nav-toggle-barras { position: relative; }
+    .nav-toggle-barras::before, .nav-toggle-barras::after { content: ''; position: absolute; left: 0; }
+    .nav-toggle-barras::before { top: -7px; }
+    .nav-toggle-barras::after  { top: 7px; }
+    .menu-aberto .nav-toggle-barras { background: transparent; }
+    .menu-aberto .nav-toggle-barras::before { top: 0; transform: rotate(45deg); }
+    .menu-aberto .nav-toggle-barras::after  { top: 0; transform: rotate(-45deg); }
+
+    .nav-menu {
+        display: none; position: absolute; top: 100%; left: 0; right: 0;
+        flex-direction: column; padding: 8px 5% 18px;
+        background: var(--primary); border-bottom: 2px solid var(--accent);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+    }
+    .menu-aberto .nav-menu { display: flex; }
+    .nav-menu a { margin-left: 0; padding: 14px 4px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .nav-menu a:not(.btn-contato-nav)::after { display: none; }
+    .nav-menu .btn-contato-nav { margin-top: 12px; text-align: center; border-bottom: 0; padding: 14px 16px; }
+
+    /* Áreas de atuação: 2 colunas no celular. O botão do rodapé segue
+       alinhado (margin-top:auto no .card-whats-btn). Nº ímpar: o último
+       card fica centralizado, com a largura de uma coluna. */
+    .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .cards-grid > .card:last-child:nth-child(odd) {
+        grid-column: 1 / -1; justify-self: center; width: calc(50% - 6px);
+    }
+    .card { padding: 24px 12px 18px; }
+    .card h3 { font-size: 0.98rem; overflow-wrap: anywhere; }
+    .card p { font-size: 0.82rem; line-height: 1.5; margin-bottom: 14px; }
+    .card .gold-3d { font-size: 34px; margin-bottom: 12px; }
+    .card-whats-btn { font-size: 0.64rem; padding: 8px 6px; gap: 4px; white-space: nowrap; }
     /* Modelo Alternativo do Hero: uma foto lateral grande não cabe bem
        em telas estreitas — volta automaticamente ao modelo padrão. */
     #hero.hero-alt .hero-pessoa-alt { display: none; }
@@ -454,6 +515,9 @@ footer {
     .full-section { padding: 64px 6%; }
     .whats-flutuante { bottom: 22px; right: 22px; }
     .carrossel-trilha > * { flex-basis: 80vw; }
+    /* Folga lateral = (largura da trilha − slide)/2: o 1º e o último slide
+       também conseguem parar no centro da tela. */
+    .carrossel-trilha { padding-left: calc((100% - 80vw) / 2); padding-right: calc((100% - 80vw) / 2); }
     .seta-carrossel.esquerda { left: 2px; }
     .seta-carrossel.direita { right: 2px; }
 }

@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Fontes de TODOS os temas — o theme-engine só alterna a variável CSS -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;600;800;900&family=Roboto:wght@400;700&family=Poppins:wght@500;700&family=Inter:wght@400;600;700&family=Oswald:wght@500;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;600;800;900&family=Roboto:wght@400;700&family=Poppins:wght@500;700&family=Inter:wght@400;600;700&family=Oswald:wght@500;700&family=Orbitron:wght@600;800&family=Lato:wght@400;700&family=Open+Sans:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <!-- body inicia "carregando": o conteúdo abaixo é o FALLBACK estático
      (funciona até offline). Quando o app.js aplicar a config da nuvem,
@@ -23,7 +23,10 @@
                 <img src="assets/logo.png" alt="Logo" class="nav-logo" id="edit-logo">
                 <span class="logo-text" id="edit-header-nome">Seu Nome | Sua Profissão</span>
             </div>
-            <nav class="nav-menu">
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-principal">
+                <span class="nav-toggle-barras" aria-hidden="true"></span>
+            </button>
+            <nav class="nav-menu" id="menu-principal" aria-label="Menu principal">
                 <a href="#hero">Início</a>
                 <a href="#sobre">Sobre</a>
                 <a href="#atuacao">Serviços</a>
@@ -193,7 +196,7 @@
             <div class="social-links" id="edit-social-links-footer"></div>
             <div class="footer-credits">
                 <p id="edit-copyright">© 2026 Seu Nome. Todos os direitos reservados.</p>
-                <p>Desenvolvido  por <a href="login.html">Eng.Erivaldo G (19)98920-7576 | Admin</a></p>
+                <p>Desenvolvido  por <a href="https://goeyes.com.br/c/eriplayoficial" target="_blank" rel="noopener">Eng.Erivaldo G (19)98920-7576</a></p>
             </div>
         </div>
     </footer>
